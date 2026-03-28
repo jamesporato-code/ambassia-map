@@ -279,6 +279,35 @@ var modalSelectedId = null;
 
 function fmtN(n){ return n >= 1000 ? (n/1000).toFixed(0)+'k' : String(n); }
 
+// ── DONNÉES FALLBACK (si Claude ne répond pas) ──
+var FALLBACK = [
+  {id:1,nom:"Sorbonne Université",ville:"Paris",lat:48.8483,lng:2.3520,type:"universite",etu:55000,bde:true},
+  {id:2,nom:"Université Paris-Saclay",ville:"Gif-sur-Yvette",lat:48.7099,lng:2.1669,type:"universite",etu:48000,bde:true},
+  {id:3,nom:"Université Paris Cité",ville:"Paris",lat:48.8279,lng:2.3813,type:"universite",etu:60000,bde:true},
+  {id:4,nom:"HEC Paris",ville:"Jouy-en-Josas",lat:48.7596,lng:2.1746,type:"ecole_commerce",etu:4500,bde:true},
+  {id:5,nom:"ESSEC Business School",ville:"Cergy",lat:49.0317,lng:2.0713,type:"ecole_commerce",etu:5500,bde:true},
+  {id:6,nom:"Sciences Po Paris",ville:"Paris",lat:48.8540,lng:2.3296,type:"iep",etu:14000,bde:true},
+  {id:7,nom:"CentraleSupélec",ville:"Gif-sur-Yvette",lat:48.7092,lng:2.1647,type:"ecole_ingenieur",etu:4500,bde:true},
+  {id:8,nom:"EM Lyon Business School",ville:"Lyon",lat:45.7496,lng:4.8272,type:"ecole_commerce",etu:9000,bde:true},
+  {id:9,nom:"INSA Lyon",ville:"Villeurbanne",lat:45.7816,lng:4.8750,type:"ecole_ingenieur",etu:5600,bde:true},
+  {id:10,nom:"Sciences Po Lyon",ville:"Lyon",lat:45.7576,lng:4.8334,type:"iep",etu:2500,bde:true},
+  {id:11,nom:"Université de Bordeaux",ville:"Bordeaux",lat:44.8076,lng:-0.6044,type:"universite",etu:52000,bde:true},
+  {id:12,nom:"Kedge Business School",ville:"Bordeaux",lat:44.8412,lng:-0.5791,type:"ecole_commerce",etu:6500,bde:true},
+  {id:13,nom:"Université Toulouse III",ville:"Toulouse",lat:43.5622,lng:1.4690,type:"universite",etu:33000,bde:true},
+  {id:14,nom:"Aix-Marseille Université",ville:"Marseille",lat:43.3042,lng:5.3922,type:"universite",etu:80000,bde:true},
+  {id:15,nom:"Université de Lille",ville:"Lille",lat:50.6108,lng:3.1418,type:"universite",etu:75000,bde:true},
+  {id:16,nom:"EDHEC Business School",ville:"Roubaix",lat:50.6912,lng:3.1797,type:"ecole_commerce",etu:9000,bde:true},
+  {id:17,nom:"Université de Nantes",ville:"Nantes",lat:47.2184,lng:-1.5536,type:"universite",etu:38000,bde:true},
+  {id:18,nom:"Audencia Business School",ville:"Nantes",lat:47.2184,lng:-1.5647,type:"ecole_commerce",etu:4500,bde:true},
+  {id:19,nom:"Université Rennes 1",ville:"Rennes",lat:48.1153,lng:-1.6821,type:"universite",etu:27000,bde:true},
+  {id:20,nom:"Sciences Po Rennes",ville:"Rennes",lat:48.1123,lng:-1.6809,type:"iep",etu:3100,bde:true},
+  {id:21,nom:"Université de Strasbourg",ville:"Strasbourg",lat:48.5818,lng:7.7651,type:"universite",etu:52000,bde:true},
+  {id:22,nom:"Grenoble École de Management",ville:"Grenoble",lat:45.1878,lng:5.7235,type:"ecole_commerce",etu:9000,bde:true},
+  {id:23,nom:"Université Grenoble Alpes",ville:"Grenoble",lat:45.1874,lng:5.7263,type:"universite",etu:60000,bde:true},
+  {id:24,nom:"SKEMA Business School",ville:"Sophia Antipolis",lat:43.6170,lng:7.0558,type:"ecole_commerce",etu:8500,bde:true},
+  {id:25,nom:"Université Côte d'Azur",ville:"Nice",lat:43.7217,lng:7.2791,type:"universite",etu:28000,bde:true}
+];
+
 // ── CHARGEMENT CAMPUS VIA CLAUDE ──
 function loadCampus() {
   var batches = [
@@ -341,14 +370,14 @@ function loadCampus() {
 }
 
 function finalize(raw) {
-  // Dédoublonner par nom
   var seen = {};
-  DATA = raw.filter(function(c) {
+  var valid = raw.filter(function(c) {
+    if (!c.nom || !c.lat || !c.lng) return false;
     var key = c.nom.toLowerCase().trim();
     if (seen[key]) return false;
     seen[key] = true;
-    // Valider les coordonnées (France métropolitaine + DOM)
-    if (!c.lat || !c.lng) return false;
+    var lat = parseFloat(c.lat), lng = parseFloat(c.lng);
+    if (isNaN(lat) || isNaN(lng)) return false;
     return true;
   }).map(function(c, i) {
     return {
@@ -363,6 +392,9 @@ function finalize(raw) {
     };
   });
 
+  // Fallback si Claude n'a rien renvoyé
+  DATA = valid.length > 0 ? valid : FALLBACK;
+
   document.getElementById('loader').style.display = 'none';
   initMap();
 }
@@ -374,6 +406,7 @@ function initMap() {
     attribution: '© OpenStreetMap', maxZoom: 18
   }).addTo(mapObj);
   L.control.zoom({ position: 'bottomright' }).addTo(mapObj);
+  initModalSearch();
   render();
 }
 
@@ -554,22 +587,34 @@ function closeModal() {
   document.getElementById('modal').style.display = 'none';
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('modal-campus').addEventListener('input', function() {
-    var q = this.value.toLowerCase();
+function initModalSearch() {
+  var inp = document.getElementById('modal-campus');
+  if (!inp) return;
+  inp.addEventListener('input', function() {
+    var q = this.value.toLowerCase().trim();
     var sugg = document.getElementById('modal-suggestions');
     if (!q || q.length < 2) { sugg.style.display = 'none'; return; }
     var matches = DATA.filter(function(c) {
       return c.nom.toLowerCase().indexOf(q) >= 0 || c.ville.toLowerCase().indexOf(q) >= 0;
-    }).slice(0, 6);
+    }).slice(0, 8);
     if (!matches.length) { sugg.style.display = 'none'; return; }
     sugg.style.display = 'block';
     sugg.innerHTML = matches.map(function(c) {
-      return '<div style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onclick="selectModalCampus(' + c.id + ',\'' + c.nom.replace(/'/g, '') + '\')">' +
-        c.nom + '<span style="color:var(--ink3);font-size:11px;margin-left:6px;">📍 ' + c.ville + '</span></div>';
+      var hasA = AMBAS[c.id] ? ' <span style="color:var(--green);font-size:10px;font-weight:600;">🟢 '+AMBAS[c.id]+' amb.</span>' : '';
+      return '<div style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;" ' +
+        'onmousedown="selectModalCampus(' + c.id + ',\'' + c.nom.replace(/'/g,"").replace(/'/g,"") + '\')">' +
+        '<span>' + c.nom + ' <span style="color:var(--ink3);font-size:11px;">📍 ' + c.ville + '</span></span>' + hasA +
+        '</div>';
     }).join('');
   });
-});
+
+  // Fermer suggestions si on clique ailleurs
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#modal')) {
+      document.getElementById('modal-suggestions').style.display = 'none';
+    }
+  });
+}
 
 function selectModalCampus(id, nom) {
   modalSelectedId = id;
