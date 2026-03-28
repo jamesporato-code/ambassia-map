@@ -3,43 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ambassia — Carte des campus français</title>
+<title>Ambassia — Carte des campus</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#F0F4FA;--white:#fff;--s1:#E8EDF7;
+  --bg:#F0F4FA;--white:#fff;--s1:#E8EDF7;--s2:#DDE5F5;
   --ink:#0A1740;--ink2:#3A4870;--ink3:#8A95B8;
   --border:#DDE2EF;
   --blue:#1A6BFF;--blue-l:#EEF3FF;--blue-m:#C5D5FF;
-  --green:#0A9E6A;--green-l:#E6F7F1;
+  --green:#0A9E6A;--green-l:#E6F7F1;--green-m:#B8E8D8;
   --purple:#7B4FE0;--purple-l:#F0EBFF;
   --orange:#E85C1A;--orange-l:#FEF0E8;
   --amber:#C47B00;--amber-l:#FEF5E0;
+  --red:#D93025;
 }
 html,body{height:100%;font-size:14px;overflow:hidden;}
 body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;}
-header{height:58px;background:var(--white);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1000;}
+
+header{height:58px;background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;z-index:1000;position:relative;}
 .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--ink);}
 .logo em{font-style:normal;color:var(--blue);}
 .h-mid{display:flex;align-items:center;gap:10px;}
 .h-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--ink2);}
 .h-badge{font-size:11px;font-weight:600;background:var(--blue-l);border:1px solid var(--blue-m);border-radius:20px;padding:3px 12px;color:var(--blue);}
+.h-badge-green{font-size:11px;font-weight:600;background:var(--green-l);border:1px solid var(--green-m);border-radius:20px;padding:3px 12px;color:var(--green);}
 .h-cta{padding:9px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;display:inline-block;}
 .h-cta:hover{background:#1558DD;}
+
 .layout{display:flex;height:calc(100vh - 58px);}
-.sidebar{width:300px;flex-shrink:0;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:310px;flex-shrink:0;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
 .sb-top{padding:12px 14px;border-bottom:1px solid var(--border);}
+
 .search-wrap{position:relative;margin-bottom:10px;}
-.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--ink3);font-size:13px;}
-.search-inp{width:100%;padding:8px 10px 8px 32px;background:var(--s1);border:1px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--ink3);font-size:12px;}
+.search-inp{width:100%;padding:8px 10px 8px 30px;background:var(--s1);border:1px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;}
 .search-inp:focus{border-color:var(--blue);background:var(--white);}
 .search-inp::placeholder{color:var(--ink3);}
-.filters{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
-.fb{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid var(--border);background:var(--white);color:var(--ink3);cursor:pointer;transition:all .15s;}
-.fb:hover{color:var(--ink);}
+
+.filters{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;}
+.fb{padding:4px 9px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid var(--border);background:var(--white);color:var(--ink3);cursor:pointer;transition:all .15s;}
 .fb.on{color:#fff;border-color:transparent;}
 .fb[data-t="all"].on{background:var(--blue);}
 .fb[data-t="universite"].on{background:var(--blue);}
@@ -47,16 +54,36 @@ header{height:58px;background:var(--white);border-bottom:1px solid var(--border)
 .fb[data-t="ecole_ingenieur"].on{background:var(--green);}
 .fb[data-t="iep"].on{background:var(--orange);}
 .fb[data-t="autre"].on{background:var(--amber);}
-.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.fb[data-t="ambassia"].on{background:var(--green);color:#fff;}
+
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:6px;}
 .st{background:var(--s1);border-radius:8px;padding:7px 8px;text-align:center;}
 .stn{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;letter-spacing:-.3px;}
 .stl{font-size:10px;color:var(--ink3);margin-top:1px;}
+
+/* AMBASSADEURS SECTION */
+.ambas-section{background:var(--green-l);border:1px solid var(--green-m);border-radius:8px;padding:10px 12px;margin-bottom:6px;}
+.ambas-title{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.ambas-add-btn{font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-l);border:1px solid var(--blue-m);border-radius:6px;padding:3px 8px;cursor:pointer;}
+.ambas-list{display:flex;flex-direction:column;gap:5px;}
+.ambas-item{background:var(--white);border:1px solid var(--green-m);border-radius:6px;padding:7px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.ambas-item-info{flex:1;min-width:0;}
+.ambas-item-name{font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ambas-item-meta{font-size:11px;color:var(--ink3);}
+.ambas-item-count{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--green);flex-shrink:0;}
+.ambas-item-edit{font-size:11px;color:var(--ink3);cursor:pointer;padding:2px 6px;border-radius:4px;}
+.ambas-item-edit:hover{background:var(--s1);color:var(--ink);}
+.ambas-empty{font-size:12px;color:var(--ink3);text-align:center;padding:8px 0;}
+
 .sb-list{flex:1;overflow-y:auto;padding:8px;}
 .sb-list::-webkit-scrollbar{width:3px;}
 .sb-list::-webkit-scrollbar-thumb{background:var(--border);}
+
 .ci{padding:10px 12px;border-radius:10px;margin-bottom:4px;cursor:pointer;border:1.5px solid transparent;background:var(--s1);transition:all .15s;}
 .ci:hover{background:var(--blue-l);border-color:var(--blue-m);}
 .ci.on{background:var(--blue-l);border-color:var(--blue);}
+.ci.has-ambas{border-color:var(--green-m);background:var(--green-l);}
+.ci.has-ambas.on{border-color:var(--green);background:var(--green-l);}
 .ci-top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:2px;}
 .ci-nom{font-size:12px;font-weight:500;color:var(--ink);line-height:1.3;}
 .ci-badge{font-size:10px;font-weight:600;padding:2px 6px;border-radius:8px;flex-shrink:0;white-space:nowrap;}
@@ -65,16 +92,31 @@ header{height:58px;background:var(--white);border-bottom:1px solid var(--border)
 .t-ecole_ingenieur{background:var(--green-l);color:var(--green);}
 .t-iep{background:var(--orange-l);color:var(--orange);}
 .t-autre{background:var(--amber-l);color:var(--amber);}
-.ci-meta{display:flex;align-items:center;gap:7px;}
+.ci-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
 .ci-v{font-size:11px;color:var(--ink3);}
 .ci-e{font-size:11px;color:var(--ink3);}
 .ci-bde{font-size:10px;color:var(--green);background:var(--green-l);border-radius:6px;padding:1px 5px;}
+.ci-ambas{font-size:10px;color:var(--white);background:var(--green);border-radius:6px;padding:1px 6px;font-weight:600;}
+
 .no-res{text-align:center;padding:24px;color:var(--ink3);font-size:13px;}
+
+/* MAP */
 .map-wrap{flex:1;position:relative;}
 #map{width:100%;height:100%;}
 
+/* LOADER */
+.loader{position:absolute;inset:0;z-index:1000;background:rgba(240,244,250,.95);backdrop-filter:blur(4px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.loader-dots{display:flex;gap:6px;}
+.ld-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);animation:ldot .9s ease-in-out infinite;}
+.ld-dot:nth-child(2){animation-delay:.15s;}
+.ld-dot:nth-child(3){animation-delay:.3s;}
+@keyframes ldot{0%,100%{opacity:.2;transform:scale(.8);}50%{opacity:1;transform:scale(1.2);}}
+.loader-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:var(--ink);}
+.loader-sub{font-size:13px;color:var(--ink3);text-align:center;max-width:280px;line-height:1.5;}
+.loader-progress{font-size:12px;color:var(--blue);font-weight:600;}
+
 /* POPUP */
-.pp{font-family:'DM Sans',sans-serif;min-width:230px;}
+.pp{font-family:'DM Sans',sans-serif;min-width:240px;}
 .pp-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--ink);margin-bottom:2px;line-height:1.2;}
 .pp-ville{font-size:11px;color:var(--ink3);margin-bottom:8px;}
 .pp-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
@@ -83,30 +125,56 @@ header{height:58px;background:var(--white);border-bottom:1px solid var(--border)
 .pp-stat{background:var(--s1);border-radius:7px;padding:7px 9px;}
 .pp-sn{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
 .pp-sl{font-size:10px;color:var(--ink3);margin-top:1px;}
+.pp-ambas-block{background:var(--green-l);border:1px solid var(--green-m);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+.pp-ambas-title{font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;}
+.pp-ambas-count{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:var(--green);letter-spacing:-1px;}
+.pp-ambas-label{font-size:11px;color:var(--green);opacity:.7;}
+.pp-ambas-form{display:flex;gap:6px;margin-top:8px;}
+.pp-ambas-inp{flex:1;padding:7px 9px;border:1px solid var(--green-m);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;background:var(--white);}
+.pp-ambas-inp:focus{border-color:var(--green);}
+.pp-ambas-save{padding:7px 12px;background:var(--green);color:#fff;border:none;border-radius:6px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;}
 .pp-insight{background:var(--blue-l);border:1px solid var(--blue-m);border-radius:8px;padding:9px 11px;margin-bottom:8px;font-size:12px;color:var(--ink2);line-height:1.5;}
-.pp-loading{text-align:center;color:var(--ink3);font-size:12px;padding:8px;font-style:italic;}
+.pp-insight-loading{text-align:center;color:var(--ink3);font-size:12px;padding:6px;font-style:italic;}
 .pp-cta{display:block;width:100%;padding:9px;text-align:center;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;text-decoration:none;}
 .pp-cta:hover{background:#1558DD;}
 
+/* MODAL AJOUT */
+.modal-overlay{position:fixed;inset:0;z-index:2000;background:rgba(10,23,64,.4);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;}
+.modal{background:var(--white);border-radius:16px;padding:24px;width:400px;max-width:95vw;box-shadow:0 16px 48px rgba(10,23,64,.2);}
+.modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;margin-bottom:6px;}
+.modal-sub{font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.5;}
+.modal-field{margin-bottom:12px;}
+.modal-label{font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:5px;display:block;}
+.modal-inp{width:100%;padding:10px 12px;background:var(--s1);border:1px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;}
+.modal-inp:focus{border-color:var(--blue);background:var(--white);}
+.modal-btns{display:flex;gap:8px;margin-top:16px;}
+.modal-cancel{flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:none;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink3);cursor:pointer;}
+.modal-save{flex:1;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;}
+
+/* LEAFLET */
 .leaflet-popup-content-wrapper{border-radius:14px !important;box-shadow:0 8px 32px rgba(10,23,64,.12) !important;border:1px solid var(--border) !important;}
 .leaflet-popup-content{margin:14px !important;}
 
+/* LÉGENDE */
 .legend{position:absolute;bottom:16px;left:16px;z-index:500;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:12px;padding:11px 13px;box-shadow:0 2px 10px rgba(10,23,64,.07);}
 .legend-t{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:7px;}
 .lr{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2);margin-bottom:3px;}
 .lr:last-child{margin-bottom:0;}
-.ld{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.ldot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
 .map-total{position:absolute;top:12px;right:12px;z-index:500;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:12px;padding:11px 15px;text-align:center;box-shadow:0 2px 10px rgba(10,23,64,.07);}
 .mt-n{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;letter-spacing:-1px;color:var(--blue);}
 .mt-l{font-size:10px;color:var(--ink3);margin-top:1px;}
 </style>
 </head>
 <body>
+
 <header>
   <div class="logo">Ambass<em>ia</em></div>
   <div class="h-mid">
-    <div class="h-title">Carte des campus français</div>
-    <div class="h-badge" id="hbadge">— campus</div>
+    <div class="h-title">Carte des campus</div>
+    <div class="h-badge" id="hbadge">Chargement...</div>
+    <div class="h-badge-green" id="hbadge-ambas" style="display:none">0 ambassadeur</div>
   </div>
   <a class="h-cta" href="https://calendly.com/james-porato-ambassia/30min" target="_blank">Lancer une campagne →</a>
 </header>
@@ -124,29 +192,78 @@ header{height:58px;background:var(--white);border-bottom:1px solid var(--border)
         <button class="fb" data-t="ecole_commerce">💼 Commerce</button>
         <button class="fb" data-t="ecole_ingenieur">⚙️ Ingé</button>
         <button class="fb" data-t="iep">🏛️ IEP</button>
-        <button class="fb" data-t="autre">📚 Autre</button>
+        <button class="fb" data-t="ambassia">🟢 Nos campus</button>
       </div>
       <div class="stats">
         <div class="st"><div class="stn" id="sn1" style="color:var(--blue)">—</div><div class="stl">Campus</div></div>
         <div class="st"><div class="stn" id="sn2" style="color:var(--green)">—</div><div class="stl">Étudiants</div></div>
         <div class="st"><div class="stn" id="sn3" style="color:var(--purple)">—</div><div class="stl">Avec BDE</div></div>
       </div>
+
+      <!-- SECTION AMBASSADEURS -->
+      <div class="ambas-section">
+        <div class="ambas-title">
+          🟢 Nos ambassadeurs
+          <span class="ambas-add-btn" onclick="openModal()">+ Ajouter</span>
+        </div>
+        <div class="ambas-list" id="ambas-list">
+          <div class="ambas-empty">Aucun ambassadeur ajouté.<br>Clique sur un campus pour en ajouter.</div>
+        </div>
+      </div>
     </div>
-    <div class="sb-list" id="sb-list"><div class="no-res">Chargement...</div></div>
+
+    <div class="sb-list" id="sb-list">
+      <div class="no-res">Chargement des campus...</div>
+    </div>
   </aside>
+
   <div class="map-wrap">
     <div id="map"></div>
+
+    <!-- LOADER -->
+    <div class="loader" id="loader">
+      <div class="loader-dots">
+        <div class="ld-dot"></div><div class="ld-dot"></div><div class="ld-dot"></div>
+      </div>
+      <div class="loader-title">Chargement des campus</div>
+      <div class="loader-sub">Claude répertorie tous les établissements d'enseignement supérieur français...</div>
+      <div class="loader-progress" id="loader-progress">Étape 1/3 — Nord & IDF</div>
+    </div>
+
     <div class="legend">
       <div class="legend-t">Type d'établissement</div>
-      <div class="lr"><div class="ld" style="background:#1A6BFF"></div>Université</div>
-      <div class="lr"><div class="ld" style="background:#7B4FE0"></div>École de commerce</div>
-      <div class="lr"><div class="ld" style="background:#0A9E6A"></div>École d'ingénieurs</div>
-      <div class="lr"><div class="ld" style="background:#E85C1A"></div>IEP / Sciences Po</div>
-      <div class="lr"><div class="ld" style="background:#C47B00"></div>Autre</div>
+      <div class="lr"><div class="ldot" style="background:#1A6BFF"></div>Université</div>
+      <div class="lr"><div class="ldot" style="background:#7B4FE0"></div>École de commerce</div>
+      <div class="lr"><div class="ldot" style="background:#0A9E6A"></div>École d'ingénieurs</div>
+      <div class="lr"><div class="ldot" style="background:#E85C1A"></div>IEP / Sciences Po</div>
+      <div class="lr"><div class="ldot" style="background:#C47B00"></div>Autre</div>
+      <div class="lr"><div class="ldot" style="background:#0A9E6A;border:2px solid white;box-shadow:0 0 0 2px #0A9E6A"></div>Campus Ambassia</div>
     </div>
+
     <div class="map-total">
       <div class="mt-n" id="mt-n">—</div>
       <div class="mt-l">campus affichés</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AJOUT AMBASSADEUR -->
+<div class="modal-overlay" id="modal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">Ajouter des ambassadeurs</div>
+    <div class="modal-sub">Sélectionne un campus et indique le nombre d'ambassadeurs Ambassia présents.</div>
+    <div class="modal-field">
+      <label class="modal-label">Campus</label>
+      <input class="modal-inp" id="modal-campus" type="text" placeholder="Rechercher un campus...">
+      <div id="modal-suggestions" style="background:var(--white);border:1px solid var(--border);border-radius:8px;margin-top:4px;display:none;max-height:160px;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Nombre d'ambassadeurs</label>
+      <input class="modal-inp" id="modal-count" type="number" min="1" max="50" placeholder="ex: 3">
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Annuler</button>
+      <button class="modal-save" onclick="saveAmbas()">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -155,354 +272,358 @@ header{height:58px;background:var(--white);border-bottom:1px solid var(--border)
 var COLORS = {universite:'#1A6BFF',ecole_commerce:'#7B4FE0',ecole_ingenieur:'#0A9E6A',iep:'#E85C1A',autre:'#C47B00'};
 var LABELS = {universite:'Université',ecole_commerce:'École de commerce',ecole_ingenieur:"École d'ingénieurs",iep:'IEP / Sciences Po',autre:'Autre'};
 
-var DATA = [
-  {id:1,nom:"Sorbonne Université",ville:"Paris",lat:48.8483,lng:2.3520,type:"universite",etu:55000,bde:true},
-  {id:2,nom:"Université Paris-Saclay",ville:"Gif-sur-Yvette",lat:48.7099,lng:2.1669,type:"universite",etu:48000,bde:true},
-  {id:3,nom:"Université Paris Cité",ville:"Paris",lat:48.8279,lng:2.3813,type:"universite",etu:60000,bde:true},
-  {id:4,nom:"Université Paris 1 Panthéon",ville:"Paris",lat:48.8494,lng:2.3447,type:"universite",etu:40000,bde:true},
-  {id:5,nom:"HEC Paris",ville:"Jouy-en-Josas",lat:48.7596,lng:2.1746,type:"ecole_commerce",etu:4500,bde:true},
-  {id:6,nom:"ESSEC Business School",ville:"Cergy",lat:49.0317,lng:2.0713,type:"ecole_commerce",etu:5500,bde:true},
-  {id:7,nom:"ESCP Europe",ville:"Paris",lat:48.8835,lng:2.3908,type:"ecole_commerce",etu:5000,bde:true},
-  {id:8,nom:"Sciences Po Paris",ville:"Paris",lat:48.8540,lng:2.3296,type:"iep",etu:14000,bde:true},
-  {id:9,nom:"CentraleSupélec",ville:"Gif-sur-Yvette",lat:48.7092,lng:2.1647,type:"ecole_ingenieur",etu:4500,bde:true},
-  {id:10,nom:"École Polytechnique",ville:"Palaiseau",lat:48.7147,lng:2.2120,type:"ecole_ingenieur",etu:3000,bde:true},
-  {id:11,nom:"Télécom Paris",ville:"Palaiseau",lat:48.7137,lng:2.2114,type:"ecole_ingenieur",etu:1900,bde:true},
-  {id:12,nom:"Mines ParisTech",ville:"Paris",lat:48.8458,lng:2.3406,type:"ecole_ingenieur",etu:1700,bde:true},
-  {id:13,nom:"Université Paris Nanterre",ville:"Nanterre",lat:48.8980,lng:2.2066,type:"universite",etu:35000,bde:true},
-  {id:14,nom:"EDHEC Business School Paris",ville:"Paris",lat:48.8748,lng:2.3104,type:"ecole_commerce",etu:2000,bde:true},
-  {id:15,nom:"Paris School of Business",ville:"Paris",lat:48.8359,lng:2.3208,type:"ecole_commerce",etu:3500,bde:true},
-  {id:16,nom:"Université Gustave Eiffel",ville:"Marne-la-Vallée",lat:48.8399,lng:2.5884,type:"universite",etu:17000,bde:true},
-  {id:17,nom:"Université Paris 13 Villetaneuse",ville:"Villetaneuse",lat:48.9601,lng:2.3451,type:"universite",etu:22000,bde:true},
-  {id:18,nom:"INSEAD",ville:"Fontainebleau",lat:48.4059,lng:2.7011,type:"ecole_commerce",etu:1300,bde:false},
-  {id:19,nom:"AgroParisTech",ville:"Paris",lat:48.8448,lng:2.3600,type:"ecole_ingenieur",etu:2400,bde:true},
-  {id:20,nom:"ENPC Ponts et Chaussées",ville:"Champs-sur-Marne",lat:48.8415,lng:2.5871,type:"ecole_ingenieur",etu:2200,bde:true},
-  {id:21,nom:"Université Claude Bernard Lyon 1",ville:"Lyon",lat:45.7827,lng:4.8686,type:"universite",etu:45000,bde:true},
-  {id:22,nom:"Université Lumière Lyon 2",ville:"Lyon",lat:45.7486,lng:4.8278,type:"universite",etu:28000,bde:true},
-  {id:23,nom:"Université Jean Moulin Lyon 3",ville:"Lyon",lat:45.7591,lng:4.8328,type:"universite",etu:25000,bde:true},
-  {id:24,nom:"EM Lyon Business School",ville:"Lyon",lat:45.7496,lng:4.8272,type:"ecole_commerce",etu:9000,bde:true},
-  {id:25,nom:"INSA Lyon",ville:"Villeurbanne",lat:45.7816,lng:4.8750,type:"ecole_ingenieur",etu:5600,bde:true},
-  {id:26,nom:"Sciences Po Lyon",ville:"Lyon",lat:45.7576,lng:4.8334,type:"iep",etu:2500,bde:true},
-  {id:27,nom:"École Centrale de Lyon",ville:"Écully",lat:45.7836,lng:4.7701,type:"ecole_ingenieur",etu:2200,bde:true},
-  {id:28,nom:"Université de Bordeaux",ville:"Bordeaux",lat:44.8076,lng:-0.6044,type:"universite",etu:52000,bde:true},
-  {id:29,nom:"Sciences Po Bordeaux",ville:"Bordeaux",lat:44.8260,lng:-0.5952,type:"iep",etu:3500,bde:true},
-  {id:30,nom:"Kedge Business School",ville:"Bordeaux",lat:44.8412,lng:-0.5791,type:"ecole_commerce",etu:6500,bde:true},
-  {id:31,nom:"Université Toulouse III Paul Sabatier",ville:"Toulouse",lat:43.5622,lng:1.4690,type:"universite",etu:33000,bde:true},
-  {id:32,nom:"Université Toulouse Capitole",ville:"Toulouse",lat:43.6076,lng:1.4361,type:"universite",etu:22000,bde:true},
-  {id:33,nom:"Sciences Po Toulouse",ville:"Toulouse",lat:43.6019,lng:1.4434,type:"iep",etu:2000,bde:true},
-  {id:34,nom:"TBS Education",ville:"Toulouse",lat:43.6025,lng:1.4544,type:"ecole_commerce",etu:4500,bde:true},
-  {id:35,nom:"ISAE-SUPAERO",ville:"Toulouse",lat:43.5653,lng:1.4749,type:"ecole_ingenieur",etu:2200,bde:true},
-  {id:36,nom:"INSA Toulouse",ville:"Toulouse",lat:43.5676,lng:1.4678,type:"ecole_ingenieur",etu:3200,bde:true},
-  {id:37,nom:"Aix-Marseille Université",ville:"Marseille",lat:43.3042,lng:5.3922,type:"universite",etu:80000,bde:true},
-  {id:38,nom:"Sciences Po Aix",ville:"Aix-en-Provence",lat:43.5264,lng:5.4463,type:"iep",etu:2200,bde:true},
-  {id:39,nom:"Kedge Business School Marseille",ville:"Marseille",lat:43.2965,lng:5.3818,type:"ecole_commerce",etu:3000,bde:true},
-  {id:40,nom:"École Centrale Marseille",ville:"Marseille",lat:43.3447,lng:5.4328,type:"ecole_ingenieur",etu:1500,bde:true},
-  {id:41,nom:"Université de Lille",ville:"Lille",lat:50.6108,lng:3.1418,type:"universite",etu:75000,bde:true},
-  {id:42,nom:"Sciences Po Lille",ville:"Lille",lat:50.6363,lng:3.0618,type:"iep",etu:2400,bde:true},
-  {id:43,nom:"EDHEC Business School",ville:"Roubaix",lat:50.6912,lng:3.1797,type:"ecole_commerce",etu:9000,bde:true},
-  {id:44,nom:"École Centrale de Lille",ville:"Villeneuve-d'Ascq",lat:50.6101,lng:3.1353,type:"ecole_ingenieur",etu:2000,bde:true},
-  {id:45,nom:"IESEG School of Management",ville:"Lille",lat:50.6378,lng:3.0599,type:"ecole_commerce",etu:6000,bde:true},
-  {id:46,nom:"ICL Université Catholique Lille",ville:"Lille",lat:50.6280,lng:3.0685,type:"universite",etu:23000,bde:true},
-  {id:47,nom:"Université de Nantes",ville:"Nantes",lat:47.2184,lng:-1.5536,type:"universite",etu:38000,bde:true},
-  {id:48,nom:"Audencia Business School",ville:"Nantes",lat:47.2184,lng:-1.5647,type:"ecole_commerce",etu:4500,bde:true},
-  {id:49,nom:"Centrale Nantes",ville:"Nantes",lat:47.2581,lng:-1.5367,type:"ecole_ingenieur",etu:2400,bde:true},
-  {id:50,nom:"Université Rennes 1",ville:"Rennes",lat:48.1153,lng:-1.6821,type:"universite",etu:27000,bde:true},
-  {id:51,nom:"Sciences Po Rennes",ville:"Rennes",lat:48.1123,lng:-1.6809,type:"iep",etu:3100,bde:true},
-  {id:52,nom:"INSA Rennes",ville:"Rennes",lat:48.1282,lng:-1.6390,type:"ecole_ingenieur",etu:2800,bde:true},
-  {id:53,nom:"ESC Rennes",ville:"Rennes",lat:48.1142,lng:-1.6724,type:"ecole_commerce",etu:2800,bde:true},
-  {id:54,nom:"Université de Strasbourg",ville:"Strasbourg",lat:48.5818,lng:7.7651,type:"universite",etu:52000,bde:true},
-  {id:55,nom:"Sciences Po Strasbourg",ville:"Strasbourg",lat:48.5840,lng:7.7514,type:"iep",etu:2800,bde:true},
-  {id:56,nom:"EM Strasbourg",ville:"Strasbourg",lat:48.5843,lng:7.7672,type:"ecole_commerce",etu:3200,bde:true},
-  {id:57,nom:"INSA Strasbourg",ville:"Strasbourg",lat:48.5854,lng:7.7626,type:"ecole_ingenieur",etu:2100,bde:true},
-  {id:58,nom:"Université de Montpellier",ville:"Montpellier",lat:43.6145,lng:3.8772,type:"universite",etu:48000,bde:true},
-  {id:59,nom:"Sciences Po Montpellier",ville:"Montpellier",lat:43.6110,lng:3.8757,type:"iep",etu:1800,bde:true},
-  {id:60,nom:"Montpellier Business School",ville:"Montpellier",lat:43.6166,lng:3.8776,type:"ecole_commerce",etu:3000,bde:true},
-  {id:61,nom:"Université Grenoble Alpes",ville:"Grenoble",lat:45.1874,lng:5.7263,type:"universite",etu:60000,bde:true},
-  {id:62,nom:"Sciences Po Grenoble",ville:"Grenoble",lat:45.1916,lng:5.7226,type:"iep",etu:3000,bde:true},
-  {id:63,nom:"Grenoble École de Management",ville:"Grenoble",lat:45.1878,lng:5.7235,type:"ecole_commerce",etu:9000,bde:true},
-  {id:64,nom:"Grenoble INP",ville:"Grenoble",lat:45.1921,lng:5.7638,type:"ecole_ingenieur",etu:5500,bde:true},
-  {id:65,nom:"Université Côte d'Azur",ville:"Nice",lat:43.7217,lng:7.2791,type:"universite",etu:28000,bde:true},
-  {id:66,nom:"SKEMA Business School",ville:"Sophia Antipolis",lat:43.6170,lng:7.0558,type:"ecole_commerce",etu:8500,bde:true},
-  {id:67,nom:"Université Clermont Auvergne",ville:"Clermont-Ferrand",lat:45.7773,lng:3.0870,type:"universite",etu:36000,bde:true},
-  {id:68,nom:"ESC Clermont",ville:"Clermont-Ferrand",lat:45.7765,lng:3.0860,type:"ecole_commerce",etu:2200,bde:true},
-  {id:69,nom:"Université de Bourgogne",ville:"Dijon",lat:47.3215,lng:5.0539,type:"universite",etu:28000,bde:true},
-  {id:70,nom:"BSB Burgundy School of Business",ville:"Dijon",lat:47.3205,lng:5.0445,type:"ecole_commerce",etu:2500,bde:true},
-  {id:71,nom:"Université de Lorraine",ville:"Nancy",lat:48.6921,lng:6.1844,type:"universite",etu:53000,bde:true},
-  {id:72,nom:"ICN Business School",ville:"Nancy",lat:48.6904,lng:6.1782,type:"ecole_commerce",etu:3000,bde:true},
-  {id:73,nom:"Université de Caen Normandie",ville:"Caen",lat:49.1795,lng:-0.3680,type:"universite",etu:27000,bde:true},
-  {id:74,nom:"EM Normandie",ville:"Caen",lat:49.1821,lng:-0.3652,type:"ecole_commerce",etu:1800,bde:true},
-  {id:75,nom:"Université de Rouen",ville:"Rouen",lat:49.3849,lng:1.1057,type:"universite",etu:30000,bde:true},
-  {id:76,nom:"NEOMA Business School Rouen",ville:"Rouen",lat:49.3887,lng:1.0939,type:"ecole_commerce",etu:9000,bde:true},
-  {id:77,nom:"INSA Rouen",ville:"Rouen",lat:49.3841,lng:1.0878,type:"ecole_ingenieur",etu:2100,bde:true},
-  {id:78,nom:"Université de Reims",ville:"Reims",lat:49.2577,lng:4.0303,type:"universite",etu:23000,bde:true},
-  {id:79,nom:"NEOMA Business School Reims",ville:"Reims",lat:49.2462,lng:4.0223,type:"ecole_commerce",etu:4000,bde:true},
-  {id:80,nom:"Sciences Po Reims",ville:"Reims",lat:49.2572,lng:4.0306,type:"iep",etu:1800,bde:true},
-  {id:81,nom:"Université de Tours",ville:"Tours",lat:47.3948,lng:0.6890,type:"universite",etu:25000,bde:true},
-  {id:82,nom:"Université de Poitiers",ville:"Poitiers",lat:46.5796,lng:0.3404,type:"universite",etu:27000,bde:true},
-  {id:83,nom:"Université de Limoges",ville:"Limoges",lat:45.8310,lng:1.2471,type:"universite",etu:15000,bde:true},
-  {id:84,nom:"Université de Franche-Comté",ville:"Besançon",lat:47.2476,lng:6.0216,type:"universite",etu:22000,bde:true},
-  {id:85,nom:"Université de Pau",ville:"Pau",lat:43.3027,lng:-0.3667,type:"universite",etu:12000,bde:true},
-  {id:86,nom:"Université de Bretagne Occidentale",ville:"Brest",lat:48.3838,lng:-4.4952,type:"universite",etu:20000,bde:true},
-  {id:87,nom:"IMT Atlantique",ville:"Brest",lat:48.3517,lng:-4.5700,type:"ecole_ingenieur",etu:2300,bde:true},
-  {id:88,nom:"Université Jean Monnet",ville:"Saint-Étienne",lat:45.4397,lng:4.3873,type:"universite",etu:18000,bde:true},
-  {id:89,nom:"Mines Saint-Étienne",ville:"Saint-Étienne",lat:45.4396,lng:4.3872,type:"ecole_ingenieur",etu:1800,bde:true},
-  {id:90,nom:"Université d'Angers",ville:"Angers",lat:47.4784,lng:-0.5632,type:"universite",etu:23000,bde:true},
-  {id:91,nom:"ESSCA School of Management",ville:"Angers",lat:47.4659,lng:-0.5570,type:"ecole_commerce",etu:3500,bde:true},
-  {id:92,nom:"Université de Picardie Jules Verne",ville:"Amiens",lat:49.8941,lng:2.3024,type:"universite",etu:27000,bde:true},
-  {id:93,nom:"Université d'Orléans",ville:"Orléans",lat:47.9029,lng:1.9093,type:"universite",etu:17000,bde:true},
-  {id:94,nom:"Université de La Rochelle",ville:"La Rochelle",lat:46.1591,lng:-1.1520,type:"universite",etu:9000,bde:true},
-  {id:95,nom:"Université de Toulon",ville:"Toulon",lat:43.1242,lng:5.9280,type:"universite",etu:11000,bde:true},
-  {id:96,nom:"Université de Perpignan",ville:"Perpignan",lat:42.6977,lng:2.8977,type:"universite",etu:10000,bde:true},
-  {id:97,nom:"Université de Haute-Alsace",ville:"Mulhouse",lat:47.7508,lng:7.3359,type:"universite",etu:10000,bde:true},
-  {id:98,nom:"IPAG Business School",ville:"Paris",lat:48.8492,lng:2.3302,type:"ecole_commerce",etu:3000,bde:true},
-  {id:99,nom:"Université Bretagne Sud",ville:"Vannes",lat:47.6559,lng:-2.7601,type:"universite",etu:9500,bde:true},
-  {id:100,nom:"Université de Cergy-Pontoise",ville:"Cergy",lat:49.0344,lng:2.0806,type:"universite",etu:17000,bde:true},
-  {id:101,nom:"Université de Valenciennes",ville:"Valenciennes",lat:50.3579,lng:3.5236,type:"universite",etu:11000,bde:true},
-  {id:102,nom:"Université d'Artois",ville:"Arras",lat:50.2924,lng:2.7720,type:"universite",etu:12000,bde:true},
-  {id:103,nom:"Sciences Po Nancy",ville:"Nancy",lat:48.6903,lng:6.1833,type:"iep",etu:1500,bde:false},
-  {id:104,nom:"Sciences Po Poitiers",ville:"Poitiers",lat:46.5811,lng:0.3407,type:"iep",etu:1000,bde:false},
-  {id:105,nom:"Sciences Po Clermont",ville:"Clermont-Ferrand",lat:45.7745,lng:3.0821,type:"iep",etu:1200,bde:false},
-  {id:106,nom:"Université de Bretagne Sud Lorient",ville:"Lorient",lat:47.7486,lng:-3.3666,type:"universite",etu:7000,bde:true},
-  {id:107,nom:"Université du Littoral",ville:"Dunkerque",lat:51.0348,lng:2.3767,type:"universite",etu:9000,bde:false},
-  {id:108,nom:"Université de Caen Bayeux",ville:"Bayeux",lat:49.2742,lng:-0.7030,type:"universite",etu:2000,bde:false},
-  {id:109,nom:"IDRAC Business School Lyon",ville:"Lyon",lat:45.7496,lng:4.8315,type:"ecole_commerce",etu:1800,bde:true},
-  {id:110,nom:"École des Mines de Nancy",ville:"Nancy",lat:48.6754,lng:6.1555,type:"ecole_ingenieur",etu:1400,bde:true},
-  {id:111,nom:"ENSAM Arts et Métiers Paris",ville:"Paris",lat:48.8449,lng:2.3535,type:"ecole_ingenieur",etu:5500,bde:true},
-  {id:112,nom:"Université de Corse",ville:"Corte",lat:42.3060,lng:9.1497,type:"universite",etu:4500,bde:false},
-  {id:113,nom:"Université de la Réunion",ville:"Saint-Denis (La Réunion)",lat:-20.8810,lng:55.4480,type:"universite",etu:13000,bde:true},
-  {id:114,nom:"Université des Antilles",ville:"Pointe-à-Pitre",lat:16.2453,lng:-61.5342,type:"universite",etu:10000,bde:true},
-  {id:115,nom:"Université de Guyane",ville:"Cayenne",lat:4.9337,lng:-52.3302,type:"universite",etu:4000,bde:false},
-  {id:116,nom:"ENSAIT",ville:"Roubaix",lat:50.6887,lng:3.1783,type:"ecole_ingenieur",etu:800,bde:true},
-  {id:117,nom:"IMT Nord Europe",ville:"Douai",lat:50.3698,lng:3.0739,type:"ecole_ingenieur",etu:1800,bde:true},
-  {id:118,nom:"ESTIA",ville:"Bidart",lat:43.4451,lng:-1.5735,type:"ecole_ingenieur",etu:900,bde:true},
-  {id:119,nom:"EIGSI La Rochelle",ville:"La Rochelle",lat:46.1540,lng:-1.1528,type:"ecole_ingenieur",etu:800,bde:true},
-  {id:120,nom:"ESC Pau",ville:"Pau",lat:43.2983,lng:-0.3674,type:"ecole_commerce",etu:1200,bde:true},
-  // PARIS IDF SUPPLÉMENTAIRES
-  {id:121,nom:"Université Paris Est Créteil",ville:"Créteil",lat:48.7792,lng:2.4579,type:"universite",etu:33000,bde:true},
-  {id:122,nom:"Université Versailles Saint-Quentin",ville:"Versailles",lat:48.8063,lng:2.1363,type:"universite",etu:20000,bde:true},
-  {id:123,nom:"ESIEE Paris",ville:"Marne-la-Vallée",lat:48.8406,lng:2.5870,type:"ecole_ingenieur",etu:1800,bde:true},
-  {id:124,nom:"EPF École d'ingénieurs",ville:"Cachan",lat:48.7950,lng:2.3316,type:"ecole_ingenieur",etu:2400,bde:true},
-  {id:125,nom:"ISEP Paris",ville:"Paris",lat:48.8430,lng:2.3120,type:"ecole_ingenieur",etu:1600,bde:true},
-  {id:126,nom:"EFREI Paris",ville:"Villejuif",lat:48.7923,lng:2.3655,type:"ecole_ingenieur",etu:3500,bde:true},
-  {id:127,nom:"ESIGELEC",ville:"Rouen",lat:49.3830,lng:1.0666,type:"ecole_ingenieur",etu:1700,bde:true},
-  {id:128,nom:"ECE Paris",ville:"Paris",lat:48.8387,lng:2.3221,type:"ecole_ingenieur",etu:3000,bde:true},
-  {id:129,nom:"EISTI",ville:"Cergy",lat:49.0327,lng:2.0740,type:"ecole_ingenieur",etu:1400,bde:true},
-  {id:130,nom:"ISG Business School",ville:"Paris",lat:48.8757,lng:2.3376,type:"ecole_commerce",etu:4000,bde:true},
-  {id:131,nom:"INSEEC Business School Paris",ville:"Paris",lat:48.8759,lng:2.3124,type:"ecole_commerce",etu:3500,bde:true},
-  {id:132,nom:"Sup de Pub",ville:"Paris",lat:48.8502,lng:2.3474,type:"autre",etu:2500,bde:true},
-  {id:133,nom:"EPSAA École de Communication",ville:"Paris",lat:48.8285,lng:2.3783,type:"autre",etu:800,bde:false},
-  {id:134,nom:"CELSA Sorbonne",ville:"Paris",lat:48.8779,lng:2.3452,type:"autre",etu:2000,bde:true},
-  {id:135,nom:"ENA (INSP)",ville:"Paris",lat:48.8527,lng:2.3208,type:"iep",etu:700,bde:false},
-  // NORMANDIE SUPPLÉMENTAIRES
-  {id:136,nom:"UniLaSalle Rouen",ville:"Rouen",lat:49.4425,lng:1.0926,type:"ecole_ingenieur",etu:4200,bde:true},
-  {id:137,nom:"ESITC Caen",ville:"Caen",lat:49.1820,lng:-0.3714,type:"ecole_ingenieur",etu:700,bde:true},
-  {id:138,nom:"Université Le Havre Normandie",ville:"Le Havre",lat:49.4949,lng:0.1070,type:"universite",etu:11000,bde:true},
-  {id:139,nom:"EM Normandie Le Havre",ville:"Le Havre",lat:49.4929,lng:0.1064,type:"ecole_commerce",etu:5000,bde:true},
-  {id:140,nom:"ISEL Le Havre",ville:"Le Havre",lat:49.4959,lng:0.1075,type:"ecole_ingenieur",etu:900,bde:true},
-  // BRETAGNE SUPPLÉMENTAIRES
-  {id:141,nom:"Université Rennes 2",ville:"Rennes",lat:48.1204,lng:-1.7035,type:"universite",etu:22000,bde:true},
-  {id:142,nom:"ENIB Brest",ville:"Brest",lat:48.3850,lng:-4.5110,type:"ecole_ingenieur",etu:900,bde:true},
-  {id:143,nom:"ENSTA Bretagne",ville:"Brest",lat:48.3615,lng:-4.5701,type:"ecole_ingenieur",etu:1300,bde:true},
-  {id:144,nom:"Université de Bretagne Sud Quimper",ville:"Quimper",lat:47.9960,lng:-4.0975,type:"universite",etu:3500,bde:true},
-  {id:145,nom:"ISEN Yncréa Brest",ville:"Brest",lat:48.3940,lng:-4.4897,type:"ecole_ingenieur",etu:1200,bde:true},
-  // PAYS DE LOIRE SUPPLÉMENTAIRES
-  {id:146,nom:"ONIRIS Nantes",ville:"Nantes",lat:47.2551,lng:-1.5238,type:"ecole_ingenieur",etu:1100,bde:true},
-  {id:147,nom:"École de Design Nantes",ville:"Nantes",lat:47.2113,lng:-1.5497,type:"autre",etu:1200,bde:true},
-  {id:148,nom:"ESEO Angers",ville:"Angers",lat:47.4636,lng:-0.5413,type:"ecole_ingenieur",etu:1600,bde:true},
-  {id:149,nom:"UCO Angers",ville:"Angers",lat:47.4729,lng:-0.5508,type:"universite",etu:5000,bde:true},
-  {id:150,nom:"Université du Maine Le Mans",ville:"Le Mans",lat:48.0094,lng:0.2015,type:"universite",etu:10000,bde:true},
-  // SUD-OUEST SUPPLÉMENTAIRES
-  {id:151,nom:"Bordeaux INP ENSEIRB-MATMECA",ville:"Bordeaux",lat:44.8071,lng:-0.6069,type:"ecole_ingenieur",etu:3200,bde:true},
-  {id:152,nom:"Bordeaux Sciences Agro",ville:"Bordeaux",lat:44.8333,lng:-0.5667,type:"ecole_ingenieur",etu:1100,bde:false},
-  {id:153,nom:"Université Bordeaux Montaigne",ville:"Bordeaux",lat:44.8152,lng:-0.6079,type:"universite",etu:18000,bde:true},
-  {id:154,nom:"Université de Pau Bayonne",ville:"Bayonne",lat:43.4832,lng:-1.5586,type:"universite",etu:4000,bde:true},
-  {id:155,nom:"IUT de Bayonne",ville:"Bayonne",lat:43.4810,lng:-1.5580,type:"universite",etu:1500,bde:true},
-  {id:156,nom:"INP Bordeaux ENSCBP",ville:"Bordeaux",lat:44.8071,lng:-0.6040,type:"ecole_ingenieur",etu:1000,bde:true},
-  {id:157,nom:"Université Toulouse Jean Jaurès",ville:"Toulouse",lat:43.5802,lng:1.4040,type:"universite",etu:25000,bde:true},
-  {id:158,nom:"INP Toulouse ENSAT",ville:"Toulouse",lat:43.5487,lng:1.4963,type:"ecole_ingenieur",etu:900,bde:true},
-  {id:159,nom:"UT3 IUT Toulouse",ville:"Toulouse",lat:43.5622,lng:1.4680,type:"universite",etu:5000,bde:true},
-  {id:160,nom:"Université de Montauban",ville:"Montauban",lat:44.0179,lng:1.3534,type:"universite",etu:5000,bde:false},
-  // RHÔNE-ALPES SUPPLÉMENTAIRES
-  {id:161,nom:"EMLYON Executive",ville:"Lyon",lat:45.7601,lng:4.8300,type:"ecole_commerce",etu:1500,bde:false},
-  {id:162,nom:"INSA Lyon Génie Civil",ville:"Villeurbanne",lat:45.7816,lng:4.8755,type:"ecole_ingenieur",etu:1200,bde:true},
-  {id:163,nom:"CPE Lyon",ville:"Villeurbanne",lat:45.7773,lng:4.8718,type:"ecole_ingenieur",etu:1900,bde:true},
-  {id:164,nom:"ISARA Lyon",ville:"Lyon",lat:45.7476,lng:4.8234,type:"ecole_ingenieur",etu:900,bde:true},
-  {id:165,nom:"ECAM Lyon",ville:"Lyon",lat:45.7613,lng:4.8307,type:"ecole_ingenieur",etu:1200,bde:true},
-  {id:166,nom:"Université Savoie Mont-Blanc",ville:"Chambéry",lat:45.5688,lng:5.9207,type:"universite",etu:15000,bde:true},
-  {id:167,nom:"Université d'Annecy",ville:"Annecy",lat:45.8992,lng:6.1294,type:"universite",etu:7000,bde:true},
-  {id:168,nom:"Université Clermont Ingénierie",ville:"Clermont-Ferrand",lat:45.7779,lng:3.0871,type:"ecole_ingenieur",etu:1500,bde:true},
-  {id:169,nom:"ESC Saint-Étienne",ville:"Saint-Étienne",lat:45.4397,lng:4.3870,type:"ecole_commerce",etu:1000,bde:true},
-  {id:170,nom:"Université de Valence",ville:"Valence",lat:44.9265,lng:4.8994,type:"universite",etu:5000,bde:false},
-  // MÉDITERRANÉE SUPPLÉMENTAIRES
-  {id:171,nom:"Université d'Avignon",ville:"Avignon",lat:43.9493,lng:4.8055,type:"universite",etu:9000,bde:true},
-  {id:172,nom:"Université de Nîmes",ville:"Nîmes",lat:43.8374,lng:4.3601,type:"universite",etu:5000,bde:true},
-  {id:173,nom:"Université Aix-Marseille IUT",ville:"Aix-en-Provence",lat:43.5298,lng:5.4473,type:"universite",etu:8000,bde:true},
-  {id:174,nom:"EURECOM Sophia",ville:"Sophia Antipolis",lat:43.6158,lng:7.0526,type:"ecole_ingenieur",etu:500,bde:false},
-  {id:175,nom:"IPAG Nice",ville:"Nice",lat:43.7090,lng:7.2619,type:"ecole_commerce",etu:2000,bde:true},
-  {id:176,nom:"INSEEC Bordeaux",ville:"Bordeaux",lat:44.8370,lng:-0.5758,type:"ecole_commerce",etu:2800,bde:true},
-  {id:177,nom:"EDHEC Nice",ville:"Nice",lat:43.7036,lng:7.2607,type:"ecole_commerce",etu:1500,bde:true},
-  {id:178,nom:"Polytech Nice Sophia",ville:"Nice",lat:43.6190,lng:7.0720,type:"ecole_ingenieur",etu:1600,bde:true},
-  // GRAND EST SUPPLÉMENTAIRES
-  {id:179,nom:"Université de Lorraine Nancy Droit",ville:"Nancy",lat:48.6854,lng:6.1844,type:"universite",etu:15000,bde:true},
-  {id:180,nom:"Mines Nancy",ville:"Nancy",lat:48.6754,lng:6.1555,type:"ecole_ingenieur",etu:1400,bde:true},
-  {id:181,nom:"Université de Lorraine Metz",ville:"Metz",lat:49.1194,lng:6.1757,type:"universite",etu:15000,bde:true},
-  {id:182,nom:"CentraleSupélec Campus Metz",ville:"Metz",lat:49.1050,lng:6.2148,type:"ecole_ingenieur",etu:500,bde:false},
-  {id:183,nom:"Université de Reims IUT",ville:"Reims",lat:49.2500,lng:4.0200,type:"universite",etu:5000,bde:true},
-  {id:184,nom:"ESC Troyes",ville:"Troyes",lat:48.3035,lng:4.0794,type:"ecole_commerce",etu:2200,bde:true},
-  {id:185,nom:"UTT Troyes",ville:"Troyes",lat:48.2990,lng:4.0783,type:"ecole_ingenieur",etu:3000,bde:true},
-  // HAUTS-DE-FRANCE SUPPLÉMENTAIRES
-  {id:186,nom:"Université Polytechnique Hauts-de-France",ville:"Valenciennes",lat:50.3598,lng:3.5220,type:"universite",etu:11000,bde:true},
-  {id:187,nom:"HEI Yncréa Lille",ville:"Lille",lat:50.6283,lng:3.0634,type:"ecole_ingenieur",etu:2400,bde:true},
-  {id:188,nom:"ISA Lille",ville:"Lille",lat:50.6330,lng:3.0600,type:"ecole_ingenieur",etu:800,bde:true},
-  {id:189,nom:"JUNIA Lille",ville:"Lille",lat:50.6290,lng:3.0618,type:"ecole_ingenieur",etu:2200,bde:true},
-  {id:190,nom:"SKEMA Lille",ville:"Lille",lat:50.6110,lng:3.1400,type:"ecole_commerce",etu:2000,bde:true},
-  {id:191,nom:"ESTACA Nord",ville:"Villeneuve-d'Ascq",lat:50.6090,lng:3.1370,type:"ecole_ingenieur",etu:600,bde:true},
-  {id:192,nom:"Université d'Artois Béthune",ville:"Béthune",lat:50.5301,lng:2.6403,type:"universite",etu:4000,bde:true},
-  // CENTRE-VAL DE LOIRE SUPPLÉMENTAIRES
-  {id:193,nom:"INSA Centre Val de Loire",ville:"Bourges",lat:47.0818,lng:2.3977,type:"ecole_ingenieur",etu:1500,bde:true},
-  {id:194,nom:"Université de Bourges",ville:"Bourges",lat:47.0820,lng:2.3975,type:"universite",etu:3000,bde:false},
-  {id:195,nom:"ESCEM Tours",ville:"Tours",lat:47.3894,lng:0.6908,type:"ecole_commerce",etu:1500,bde:true},
-  // BOURGOGNE-FRANCHE-COMTÉ SUPPLÉMENTAIRES
-  {id:196,nom:"UTBM Belfort",ville:"Belfort",lat:47.6390,lng:6.8623,type:"ecole_ingenieur",etu:2500,bde:true},
-  {id:197,nom:"AgroSup Dijon",ville:"Dijon",lat:47.3197,lng:5.0627,type:"ecole_ingenieur",etu:1000,bde:true},
-  {id:198,nom:"ENSMM Besançon",ville:"Besançon",lat:47.2433,lng:6.0241,type:"ecole_ingenieur",etu:900,bde:true},
-  // AQUITAINE SUPPLÉMENTAIRES
-  {id:199,nom:"Université de Périgueux",ville:"Périgueux",lat:45.1871,lng:0.7202,type:"universite",etu:3000,bde:false},
-  {id:200,nom:"ENITA Bordeaux",ville:"Bordeaux",lat:44.7870,lng:-0.5780,type:"ecole_ingenieur",etu:700,bde:false}
-];
+var DATA = [];
+var AMBAS = {}; // {campusId: count}
+var filter = 'all', search = '', mapObj, mks = [], insightCache = {};
+var modalSelectedId = null;
 
-var filter='all', search='', mapObj, mks=[], cache={};
+function fmtN(n){ return n >= 1000 ? (n/1000).toFixed(0)+'k' : String(n); }
 
-function fmtN(n){ return n>=1000?(n/1000).toFixed(0)+'k':String(n); }
+// ── CHARGEMENT CAMPUS VIA CLAUDE ──
+function loadCampus() {
+  var batches = [
+    {
+      label: 'Étape 1/3 — Paris & Nord',
+      prompt: 'Liste exhaustive de tous les etablissements denseignement superieur en France dans ces regions : Ile-de-France (Paris, Versailles, Cergy, Marne-la-Vallee, Evry, Creteil, Nanterre), Hauts-de-France (Lille, Valenciennes, Amiens, Arras, Dunkerque, Roubaix, Lens, Bethune), Grand Est (Strasbourg, Reims, Nancy, Metz, Mulhouse, Troyes, Belfort), Normandie (Rouen, Caen, Le Havre, Cherbourg). Inclus universites, grandes ecoles, ecoles de commerce, ecoles dingenieur, IEP, ENSC, IAE, IUT independants connus. Retourne UNIQUEMENT un tableau JSON valide. Chaque objet : {"nom":"...","ville":"...","lat":0.0,"lng":0.0,"type":"universite|ecole_commerce|ecole_ingenieur|iep|autre","etu":0,"bde":true}. Minimum 80 etablissements. Pas de texte, pas de backticks, juste le JSON.'
+    },
+    {
+      label: 'Étape 2/3 — Sud & Est',
+      prompt: 'Liste exhaustive de tous les etablissements denseignement superieur en France dans ces regions : Auvergne-Rhone-Alpes (Lyon, Grenoble, Saint-Etienne, Clermont-Ferrand, Chambery, Annecy, Valence), PACA (Marseille, Aix-en-Provence, Nice, Toulon, Avignon, Cannes), Occitanie (Toulouse, Montpellier, Nimes, Perpignan, Montauban, Albi), Bourgogne-Franche-Comte (Dijon, Besancon, Belfort, Chalon), Corse (Corte, Ajaccio). Inclus universites, grandes ecoles, ecoles de commerce, ecoles dingenieur, IEP, ENSC, IAE. Retourne UNIQUEMENT un tableau JSON valide. Chaque objet : {"nom":"...","ville":"...","lat":0.0,"lng":0.0,"type":"universite|ecole_commerce|ecole_ingenieur|iep|autre","etu":0,"bde":true}. Minimum 80 etablissements. Pas de texte, pas de backticks, juste le JSON.'
+    },
+    {
+      label: 'Étape 3/3 — Ouest & DOM-TOM',
+      prompt: 'Liste exhaustive de tous les etablissements denseignement superieur en France dans ces regions : Bretagne (Rennes, Brest, Lorient, Quimper, Vannes, Saint-Brieuc), Pays de la Loire (Nantes, Angers, Le Mans, Saint-Nazaire, La Roche-sur-Yon), Nouvelle-Aquitaine (Bordeaux, Pau, Bayonne, Limoges, Poitiers, La Rochelle, Perigueux, Angouleme), Centre-Val de Loire (Tours, Orleans, Bourges, Chartres, Blois), DOM-TOM (La Reunion, Martinique, Guadeloupe, Guyane). Inclus universites, grandes ecoles, ecoles de commerce, ecoles dingenieur, IEP. Retourne UNIQUEMENT un tableau JSON valide. Chaque objet : {"nom":"...","ville":"...","lat":0.0,"lng":0.0,"type":"universite|ecole_commerce|ecole_ingenieur|iep|autre","etu":0,"bde":true}. Minimum 60 etablissements. Pas de texte, pas de backticks, juste le JSON.'
+    }
+  ];
 
-function getFiltered(){
-  return DATA.filter(function(c){
-    var fok = filter==='all'||c.type===filter;
-    var sok = !search||c.nom.toLowerCase().indexOf(search.toLowerCase())>=0||c.ville.toLowerCase().indexOf(search.toLowerCase())>=0;
-    return fok&&sok;
-  });
+  var results = [];
+  var idx = 0;
+
+  function next() {
+    if (idx >= batches.length) {
+      finalize(results);
+      return;
+    }
+    var batch = batches[idx];
+    document.getElementById('loader-progress').textContent = batch.label;
+
+    fetch('/.netlify/functions/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: batch.prompt }]
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.content && d.content[0]) {
+        var text = d.content[0].text.trim()
+          .replace(/^\x60\x60\x60json\s*/i, '')
+          .replace(/^\x60\x60\x60\s*/i, '')
+          .replace(/\s*\x60\x60\x60\s*$/i, '');
+        try {
+          var arr = JSON.parse(text);
+          if (Array.isArray(arr)) results = results.concat(arr);
+        } catch(e) {
+          var m = text.match(/\[[\s\S]+\]/);
+          if (m) { try { var arr2 = JSON.parse(m[0]); if (Array.isArray(arr2)) results = results.concat(arr2); } catch(e2) {} }
+        }
+      }
+      idx++;
+      next();
+    })
+    .catch(function() { idx++; next(); });
+  }
+
+  next();
 }
 
-function initMap(){
-  mapObj = L.map('map',{center:[46.5,2.5],zoom:6,zoomControl:false});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'© OpenStreetMap',maxZoom:18
+function finalize(raw) {
+  // Dédoublonner par nom
+  var seen = {};
+  DATA = raw.filter(function(c) {
+    var key = c.nom.toLowerCase().trim();
+    if (seen[key]) return false;
+    seen[key] = true;
+    // Valider les coordonnées (France métropolitaine + DOM)
+    if (!c.lat || !c.lng) return false;
+    return true;
+  }).map(function(c, i) {
+    return {
+      id: i + 1,
+      nom: c.nom || '',
+      ville: c.ville || '',
+      lat: parseFloat(c.lat),
+      lng: parseFloat(c.lng),
+      type: c.type || 'universite',
+      etu: parseInt(c.etu) || 0,
+      bde: c.bde === true || c.bde === 'true'
+    };
+  });
+
+  document.getElementById('loader').style.display = 'none';
+  initMap();
+}
+
+// ── MAP ──
+function initMap() {
+  mapObj = L.map('map', { center: [46.5, 2.5], zoom: 6, zoomControl: false });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 18
   }).addTo(mapObj);
-  L.control.zoom({position:'bottomright'}).addTo(mapObj);
+  L.control.zoom({ position: 'bottomright' }).addTo(mapObj);
   render();
 }
 
-function render(){
+function getFiltered() {
+  return DATA.filter(function(c) {
+    if (filter === 'ambassia') return !!AMBAS[c.id];
+    var fok = filter === 'all' || c.type === filter;
+    var sok = !search || c.nom.toLowerCase().indexOf(search.toLowerCase()) >= 0 || c.ville.toLowerCase().indexOf(search.toLowerCase()) >= 0;
+    return fok && sok;
+  });
+}
+
+function render() {
   var list = getFiltered();
-  var totalEtu = list.reduce(function(a,c){return a+c.etu;},0);
-  var totalBde = list.filter(function(c){return c.bde;}).length;
+  var totalEtu = list.reduce(function(a, c) { return a + c.etu; }, 0);
+  var totalBde = list.filter(function(c) { return c.bde; }).length;
+  var totalAmbas = Object.values(AMBAS).reduce(function(a, v) { return a + v; }, 0);
+
   document.getElementById('sn1').textContent = list.length;
   document.getElementById('sn2').textContent = fmtN(totalEtu);
   document.getElementById('sn3').textContent = totalBde;
-  document.getElementById('hbadge').textContent = DATA.length+' campus';
+  document.getElementById('hbadge').textContent = DATA.length + ' campus';
+
+  var badgeAmbas = document.getElementById('hbadge-ambas');
+  if (totalAmbas > 0) {
+    badgeAmbas.style.display = 'inline-block';
+    badgeAmbas.textContent = totalAmbas + ' ambassadeur' + (totalAmbas > 1 ? 's' : '');
+  } else {
+    badgeAmbas.style.display = 'none';
+  }
+
   document.getElementById('mt-n').textContent = list.length;
 
-  mks.forEach(function(m){mapObj.removeLayer(m);});
-  mks=[];
+  // Markers
+  mks.forEach(function(m) { mapObj.removeLayer(m); });
+  mks = [];
 
-  list.forEach(function(c){
-    var col = COLORS[c.type]||'#C47B00';
-    var icon = L.divIcon({
-      className:'',
-      html:'<div style="width:11px;height:11px;border-radius:50%;background:'+col+';border:2px solid white;box-shadow:0 0 6px '+col+'99;cursor:pointer;transition:transform .15s;"></div>',
-      iconSize:[11,11],iconAnchor:[5,5]
-    });
-    var mk = L.marker([c.lat,c.lng],{icon:icon}).addTo(mapObj);
-    mk.on('click',function(){openPopup(c,mk);});
+  list.forEach(function(c) {
+    var hasAmbas = !!AMBAS[c.id];
+    var col = COLORS[c.type] || '#C47B00';
+    var size = hasAmbas ? 16 : 10;
+    var html = hasAmbas
+      ? '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:#0A9E6A;border:3px solid white;box-shadow:0 0 10px rgba(10,158,106,.6);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:white;">' + AMBAS[c.id] + '</div>'
+      : '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:'+col+';border:2px solid white;box-shadow:0 0 6px '+col+'99;cursor:pointer;"></div>';
+
+    var icon = L.divIcon({ className: '', html: html, iconSize: [size, size], iconAnchor: [size/2, size/2] });
+    var mk = L.marker([c.lat, c.lng], { icon: icon }).addTo(mapObj);
+    mk.on('click', function() { openPopup(c, mk); });
     mks.push(mk);
   });
 
-  var listEl = document.getElementById('sb-list');
-  if(!list.length){listEl.innerHTML='<div class="no-res">Aucun résultat</div>';return;}
-  listEl.innerHTML = list.map(function(c){
-    return '<div class="ci" data-id="'+c.id+'" onclick="clickItem('+c.id+')">'+
-      '<div class="ci-top"><div class="ci-nom">'+c.nom+'</div>'+
-      '<span class="ci-badge t-'+c.type+'">'+LABELS[c.type].split(' ')[0]+'</span></div>'+
-      '<div class="ci-meta"><span class="ci-v">📍 '+c.ville+'</span>'+
-      '<span class="ci-e">👥 '+fmtN(c.etu)+'</span>'+
-      (c.bde?'<span class="ci-bde">BDE</span>':'')+
+  // Liste
+  renderList(list);
+  renderAmbasList();
+}
+
+function renderList(list) {
+  var el = document.getElementById('sb-list');
+  if (!list.length) { el.innerHTML = '<div class="no-res">Aucun résultat</div>'; return; }
+  el.innerHTML = list.map(function(c) {
+    var hasAmbas = !!AMBAS[c.id];
+    return '<div class="ci' + (hasAmbas ? ' has-ambas' : '') + '" data-id="' + c.id + '" onclick="clickItem(' + c.id + ')">' +
+      '<div class="ci-top"><div class="ci-nom">' + c.nom + '</div>' +
+      '<span class="ci-badge t-' + c.type + '">' + LABELS[c.type].split(' ')[0] + '</span></div>' +
+      '<div class="ci-meta"><span class="ci-v">📍 ' + c.ville + '</span>' +
+      (c.etu ? '<span class="ci-e">👥 ' + fmtN(c.etu) + '</span>' : '') +
+      (c.bde ? '<span class="ci-bde">BDE</span>' : '') +
+      (hasAmbas ? '<span class="ci-ambas">🟢 ' + AMBAS[c.id] + ' amb.</span>' : '') +
       '</div></div>';
   }).join('');
 }
 
-function clickItem(id){
-  document.querySelectorAll('.ci').forEach(function(el){el.classList.remove('on');});
-  var el=document.querySelector('[data-id="'+id+'"]');
-  if(el){el.classList.add('on');el.scrollIntoView({block:'nearest',behavior:'smooth'});}
-  var c=DATA.find(function(x){return x.id===id;});
-  if(!c) return;
-  var idx=getFiltered().findIndex(function(x){return x.id===id;});
-  mapObj.flyTo([c.lat,c.lng],13,{duration:1});
-  if(idx>=0&&mks[idx]) openPopup(c,mks[idx]);
+function renderAmbasList() {
+  var el = document.getElementById('ambas-list');
+  var keys = Object.keys(AMBAS);
+  if (!keys.length) {
+    el.innerHTML = '<div class="ambas-empty">Aucun ambassadeur ajouté.<br>Clique sur un campus pour en ajouter.</div>';
+    return;
+  }
+  el.innerHTML = keys.map(function(id) {
+    var c = DATA.find(function(x) { return x.id == id; });
+    if (!c) return '';
+    return '<div class="ambas-item">' +
+      '<div class="ambas-item-info">' +
+        '<div class="ambas-item-name">' + c.nom + '</div>' +
+        '<div class="ambas-item-meta">📍 ' + c.ville + '</div>' +
+      '</div>' +
+      '<div class="ambas-item-count">' + AMBAS[id] + '</div>' +
+      '<div class="ambas-item-edit" onclick="editAmbas(' + id + ')">✏️</div>' +
+    '</div>';
+  }).join('');
 }
 
-function openPopup(c,mk){
-  var col=COLORS[c.type]||'#C47B00';
-  var insightHtml = cache[c.id]
-    ?'<div class="pp-insight">'+cache[c.id]+'</div>'
-    :'<div class="pp-loading" id="pi-'+c.id+'">⏳ Analyse IA en cours...</div>';
+function clickItem(id) {
+  document.querySelectorAll('.ci').forEach(function(el) { el.classList.remove('on'); });
+  var el = document.querySelector('[data-id="' + id + '"]');
+  if (el) { el.classList.add('on'); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  var c = DATA.find(function(x) { return x.id === id; });
+  if (!c) return;
+  var list = getFiltered();
+  var idx = list.findIndex(function(x) { return x.id === id; });
+  mapObj.flyTo([c.lat, c.lng], 13, { duration: 1 });
+  if (idx >= 0 && mks[idx]) openPopup(c, mks[idx]);
+}
 
-  L.popup({maxWidth:270})
-    .setLatLng([c.lat,c.lng])
+function openPopup(c, mk) {
+  var col = COLORS[c.type] || '#C47B00';
+  var count = AMBAS[c.id] || 0;
+
+  var ambasBlock = '<div class="pp-ambas-block">' +
+    '<div class="pp-ambas-title">🟢 Ambassadeurs Ambassia</div>' +
+    (count > 0
+      ? '<div class="pp-ambas-count">' + count + '</div><div class="pp-ambas-label">ambassadeur' + (count > 1 ? 's' : '') + ' sur ce campus</div>'
+      : '<div style="font-size:12px;color:var(--ink3);margin-bottom:6px;">Aucun ambassadeur sur ce campus</div>'
+    ) +
+    '<div class="pp-ambas-form">' +
+      '<input class="pp-ambas-inp" id="ambas-inp-' + c.id + '" type="number" min="0" max="50" placeholder="Nb ambassadeurs" value="' + (count || '') + '">' +
+      '<button class="pp-ambas-save" onclick="saveAmbasFromPopup(' + c.id + ')">Enregistrer</button>' +
+    '</div>' +
+  '</div>';
+
+  var insightHtml = insightCache[c.id]
+    ? '<div class="pp-insight">' + insightCache[c.id] + '</div>'
+    : '<div class="pp-insight-loading" id="pi-' + c.id + '">💡 Analyse IA en cours...</div>';
+
+  L.popup({ maxWidth: 280 })
+    .setLatLng([c.lat, c.lng])
     .setContent(
-      '<div class="pp">'+
-      '<div class="pp-name">'+c.nom+'</div>'+
-      '<div class="pp-ville">📍 '+c.ville+'</div>'+
-      '<div class="pp-chips">'+
-        '<span class="pp-chip t-'+c.type+'" style="background:'+col+'15;color:'+col+'">'+LABELS[c.type]+'</span>'+
-        (c.bde?'<span class="pp-chip" style="background:#E6F7F1;color:#0A9E6A">✓ BDE</span>':'<span class="pp-chip" style="background:#f5f5f5;color:#999">Pas de BDE</span>')+
-      '</div>'+
-      '<div class="pp-grid">'+
-        '<div class="pp-stat"><div class="pp-sn" style="color:'+col+'">'+fmtN(c.etu)+'</div><div class="pp-sl">Étudiants</div></div>'+
-        '<div class="pp-stat"><div class="pp-sn" style="color:'+col+'">'+(c.bde?'Oui':'Non')+'</div><div class="pp-sl">BDE actif</div></div>'+
-      '</div>'+
-      insightHtml+
-      '<a class="pp-cta" href="https://calendly.com/james-porato-ambassia/30min" target="_blank">Lancer une campagne ici →</a>'+
+      '<div class="pp">' +
+      '<div class="pp-name">' + c.nom + '</div>' +
+      '<div class="pp-ville">📍 ' + c.ville + '</div>' +
+      '<div class="pp-chips">' +
+        '<span class="pp-chip t-' + c.type + '" style="background:' + col + '15;color:' + col + '">' + LABELS[c.type] + '</span>' +
+        (c.bde ? '<span class="pp-chip" style="background:#E6F7F1;color:#0A9E6A">✓ BDE</span>' : '') +
+      '</div>' +
+      '<div class="pp-grid">' +
+        '<div class="pp-stat"><div class="pp-sn" style="color:' + col + '">' + fmtN(c.etu) + '</div><div class="pp-sl">Étudiants</div></div>' +
+        '<div class="pp-stat"><div class="pp-sn" style="color:' + col + '">' + LABELS[c.type].split(' ')[0] + '</div><div class="pp-sl">Type</div></div>' +
+      '</div>' +
+      ambasBlock +
+      insightHtml +
+      '<a class="pp-cta" href="https://calendly.com/james-porato-ambassia/30min" target="_blank">Lancer une campagne →</a>' +
       '</div>'
     ).openOn(mapObj);
 
-  if(!cache[c.id]) fetchInsight(c);
+  if (!insightCache[c.id]) fetchInsight(c);
 }
 
-function fetchInsight(c){
-  fetch('/.netlify/functions/claude',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'claude-sonnet-4-20250514',
-      max_tokens:150,
-      messages:[{role:'user',content:'Donne un insight court (2 phrases max, directes) sur comment une marque peut activer le campus '+c.nom+' a '+c.ville+' ('+fmtN(c.etu)+' etudiants, '+LABELS[c.type]+'). Mentionne une specificite de ce campus pour la Gen Z. Sois percutant et concis.'}]
+function saveAmbasFromPopup(campusId) {
+  var inp = document.getElementById('ambas-inp-' + campusId);
+  if (!inp) return;
+  var val = parseInt(inp.value);
+  if (val > 0) {
+    AMBAS[campusId] = val;
+  } else {
+    delete AMBAS[campusId];
+  }
+  mapObj.closePopup();
+  render();
+}
+
+function editAmbas(campusId) {
+  var c = DATA.find(function(x) { return x.id == campusId; });
+  if (!c) return;
+  clickItem(campusId);
+}
+
+// ── MODAL ──
+function openModal() {
+  document.getElementById('modal').style.display = 'flex';
+  document.getElementById('modal-campus').value = '';
+  document.getElementById('modal-count').value = '';
+  document.getElementById('modal-suggestions').style.display = 'none';
+  modalSelectedId = null;
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('modal-campus').addEventListener('input', function() {
+    var q = this.value.toLowerCase();
+    var sugg = document.getElementById('modal-suggestions');
+    if (!q || q.length < 2) { sugg.style.display = 'none'; return; }
+    var matches = DATA.filter(function(c) {
+      return c.nom.toLowerCase().indexOf(q) >= 0 || c.ville.toLowerCase().indexOf(q) >= 0;
+    }).slice(0, 6);
+    if (!matches.length) { sugg.style.display = 'none'; return; }
+    sugg.style.display = 'block';
+    sugg.innerHTML = matches.map(function(c) {
+      return '<div style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onclick="selectModalCampus(' + c.id + ',\'' + c.nom.replace(/'/g, '') + '\')">' +
+        c.nom + '<span style="color:var(--ink3);font-size:11px;margin-left:6px;">📍 ' + c.ville + '</span></div>';
+    }).join('');
+  });
+});
+
+function selectModalCampus(id, nom) {
+  modalSelectedId = id;
+  document.getElementById('modal-campus').value = nom;
+  document.getElementById('modal-suggestions').style.display = 'none';
+}
+
+function saveAmbas() {
+  if (!modalSelectedId) { alert('Sélectionne un campus.'); return; }
+  var count = parseInt(document.getElementById('modal-count').value);
+  if (!count || count < 1) { alert('Indique un nombre valide.'); return; }
+  AMBAS[modalSelectedId] = count;
+  closeModal();
+  render();
+}
+
+// ── INSIGHT IA ──
+function fetchInsight(c) {
+  fetch('/.netlify/functions/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 120,
+      messages: [{ role: 'user', content: 'Donne un insight court (2 phrases max) sur comment une marque Gen Z peut activer le campus ' + c.nom + ' a ' + c.ville + ' (' + fmtN(c.etu) + ' etudiants). Sois precis et percutant.' }]
     })
   })
-  .then(function(r){return r.json();})
-  .then(function(d){
-    if(d.content&&d.content[0]){
-      cache[c.id]=d.content[0].text;
-      var el=document.getElementById('pi-'+c.id);
-      if(el) el.outerHTML='<div class="pp-insight">'+cache[c.id]+'</div>';
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.content && d.content[0]) {
+      insightCache[c.id] = d.content[0].text;
+      var el = document.getElementById('pi-' + c.id);
+      if (el) el.outerHTML = '<div class="pp-insight">' + insightCache[c.id] + '</div>';
     }
   })
-  .catch(function(){
-    var el=document.getElementById('pi-'+c.id);
-    if(el) el.style.display='none';
+  .catch(function() {
+    var el = document.getElementById('pi-' + c.id);
+    if (el) el.style.display = 'none';
   });
 }
 
-document.getElementById('search').addEventListener('input',function(e){search=e.target.value;render();});
-document.getElementById('filters').addEventListener('click',function(e){
-  var b=e.target.closest('.fb');
-  if(!b) return;
-  document.querySelectorAll('.fb').forEach(function(x){x.classList.remove('on');});
+// ── EVENTS ──
+document.getElementById('search').addEventListener('input', function(e) { search = e.target.value; render(); });
+document.getElementById('filters').addEventListener('click', function(e) {
+  var b = e.target.closest('.fb');
+  if (!b) return;
+  document.querySelectorAll('.fb').forEach(function(x) { x.classList.remove('on'); });
   b.classList.add('on');
-  filter=b.dataset.t;
+  filter = b.dataset.t;
   render();
 });
 
-initMap();
+// ── START ──
+loadCampus();
 </script>
 </body>
 </html>
