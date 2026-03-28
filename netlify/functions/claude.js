@@ -1,38 +1,629 @@
-exports.handler = async function(event) {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ambassia — Carte des campus</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F0F4FA;--white:#fff;--s1:#E8EDF7;--s2:#DDE5F5;
+  --ink:#0A1740;--ink2:#3A4870;--ink3:#8A95B8;
+  --border:#DDE2EF;
+  --blue:#1A6BFF;--blue-l:#EEF3FF;--blue-m:#C5D5FF;
+  --green:#0A9E6A;--green-l:#E6F7F1;--green-m:#B8E8D8;
+  --purple:#7B4FE0;--purple-l:#F0EBFF;
+  --orange:#E85C1A;--orange-l:#FEF0E8;
+  --amber:#C47B00;--amber-l:#FEF5E0;
+  --red:#D93025;
+}
+html,body{height:100%;font-size:14px;overflow:hidden;}
+body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;}
 
-  try {
-    const body = JSON.parse(event.body);
+header{height:58px;background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;z-index:1000;position:relative;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--ink);}
+.logo em{font-style:normal;color:var(--blue);}
+.h-mid{display:flex;align-items:center;gap:10px;}
+.h-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--ink2);}
+.h-badge{font-size:11px;font-weight:600;background:var(--blue-l);border:1px solid var(--blue-m);border-radius:20px;padding:3px 12px;color:var(--blue);}
+.h-badge-green{font-size:11px;font-weight:600;background:var(--green-l);border:1px solid var(--green-m);border-radius:20px;padding:3px 12px;color:var(--green);}
+.h-cta{padding:9px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;display:inline-block;}
+.h-cta:hover{background:#1558DD;}
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+.layout{display:flex;height:calc(100vh - 58px);}
+
+/* SIDEBAR */
+.sidebar{width:310px;flex-shrink:0;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.sb-top{padding:12px 14px;border-bottom:1px solid var(--border);}
+
+.search-wrap{position:relative;margin-bottom:10px;}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--ink3);font-size:12px;}
+.search-inp{width:100%;padding:8px 10px 8px 30px;background:var(--s1);border:1px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;}
+.search-inp:focus{border-color:var(--blue);background:var(--white);}
+.search-inp::placeholder{color:var(--ink3);}
+
+.filters{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;}
+.fb{padding:4px 9px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid var(--border);background:var(--white);color:var(--ink3);cursor:pointer;transition:all .15s;}
+.fb.on{color:#fff;border-color:transparent;}
+.fb[data-t="all"].on{background:var(--blue);}
+.fb[data-t="universite"].on{background:var(--blue);}
+.fb[data-t="ecole_commerce"].on{background:var(--purple);}
+.fb[data-t="ecole_ingenieur"].on{background:var(--green);}
+.fb[data-t="iep"].on{background:var(--orange);}
+.fb[data-t="autre"].on{background:var(--amber);}
+.fb[data-t="ambassia"].on{background:var(--green);color:#fff;}
+
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:6px;}
+.st{background:var(--s1);border-radius:8px;padding:7px 8px;text-align:center;}
+.stn{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;letter-spacing:-.3px;}
+.stl{font-size:10px;color:var(--ink3);margin-top:1px;}
+
+/* AMBASSADEURS SECTION */
+.ambas-section{background:var(--green-l);border:1px solid var(--green-m);border-radius:8px;padding:10px 12px;margin-bottom:6px;}
+.ambas-title{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.ambas-add-btn{font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-l);border:1px solid var(--blue-m);border-radius:6px;padding:3px 8px;cursor:pointer;}
+.ambas-list{display:flex;flex-direction:column;gap:5px;}
+.ambas-item{background:var(--white);border:1px solid var(--green-m);border-radius:6px;padding:7px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.ambas-item-info{flex:1;min-width:0;}
+.ambas-item-name{font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ambas-item-meta{font-size:11px;color:var(--ink3);}
+.ambas-item-count{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--green);flex-shrink:0;}
+.ambas-item-edit{font-size:11px;color:var(--ink3);cursor:pointer;padding:2px 6px;border-radius:4px;}
+.ambas-item-edit:hover{background:var(--s1);color:var(--ink);}
+.ambas-empty{font-size:12px;color:var(--ink3);text-align:center;padding:8px 0;}
+
+.sb-list{flex:1;overflow-y:auto;padding:8px;}
+.sb-list::-webkit-scrollbar{width:3px;}
+.sb-list::-webkit-scrollbar-thumb{background:var(--border);}
+
+.ci{padding:10px 12px;border-radius:10px;margin-bottom:4px;cursor:pointer;border:1.5px solid transparent;background:var(--s1);transition:all .15s;}
+.ci:hover{background:var(--blue-l);border-color:var(--blue-m);}
+.ci.on{background:var(--blue-l);border-color:var(--blue);}
+.ci.has-ambas{border-color:var(--green-m);background:var(--green-l);}
+.ci.has-ambas.on{border-color:var(--green);background:var(--green-l);}
+.ci-top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:2px;}
+.ci-nom{font-size:12px;font-weight:500;color:var(--ink);line-height:1.3;}
+.ci-badge{font-size:10px;font-weight:600;padding:2px 6px;border-radius:8px;flex-shrink:0;white-space:nowrap;}
+.t-universite{background:var(--blue-l);color:var(--blue);}
+.t-ecole_commerce{background:var(--purple-l);color:var(--purple);}
+.t-ecole_ingenieur{background:var(--green-l);color:var(--green);}
+.t-iep{background:var(--orange-l);color:var(--orange);}
+.t-autre{background:var(--amber-l);color:var(--amber);}
+.ci-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.ci-v{font-size:11px;color:var(--ink3);}
+.ci-e{font-size:11px;color:var(--ink3);}
+.ci-bde{font-size:10px;color:var(--green);background:var(--green-l);border-radius:6px;padding:1px 5px;}
+.ci-ambas{font-size:10px;color:var(--white);background:var(--green);border-radius:6px;padding:1px 6px;font-weight:600;}
+
+.no-res{text-align:center;padding:24px;color:var(--ink3);font-size:13px;}
+
+/* MAP */
+.map-wrap{flex:1;position:relative;}
+#map{width:100%;height:100%;}
+
+/* LOADER */
+.loader{position:absolute;inset:0;z-index:1000;background:rgba(240,244,250,.95);backdrop-filter:blur(4px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.loader-dots{display:flex;gap:6px;}
+.ld-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);animation:ldot .9s ease-in-out infinite;}
+.ld-dot:nth-child(2){animation-delay:.15s;}
+.ld-dot:nth-child(3){animation-delay:.3s;}
+@keyframes ldot{0%,100%{opacity:.2;transform:scale(.8);}50%{opacity:1;transform:scale(1.2);}}
+.loader-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:var(--ink);}
+.loader-sub{font-size:13px;color:var(--ink3);text-align:center;max-width:280px;line-height:1.5;}
+.loader-progress{font-size:12px;color:var(--blue);font-weight:600;}
+
+/* POPUP */
+.pp{font-family:'DM Sans',sans-serif;min-width:240px;}
+.pp-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--ink);margin-bottom:2px;line-height:1.2;}
+.pp-ville{font-size:11px;color:var(--ink3);margin-bottom:8px;}
+.pp-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
+.pp-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;}
+.pp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
+.pp-stat{background:var(--s1);border-radius:7px;padding:7px 9px;}
+.pp-sn{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
+.pp-sl{font-size:10px;color:var(--ink3);margin-top:1px;}
+.pp-ambas-block{background:var(--green-l);border:1px solid var(--green-m);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+.pp-ambas-title{font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;}
+.pp-ambas-count{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:var(--green);letter-spacing:-1px;}
+.pp-ambas-label{font-size:11px;color:var(--green);opacity:.7;}
+.pp-ambas-form{display:flex;gap:6px;margin-top:8px;}
+.pp-ambas-inp{flex:1;padding:7px 9px;border:1px solid var(--green-m);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;background:var(--white);}
+.pp-ambas-inp:focus{border-color:var(--green);}
+.pp-ambas-save{padding:7px 12px;background:var(--green);color:#fff;border:none;border-radius:6px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;}
+.pp-insight{background:var(--blue-l);border:1px solid var(--blue-m);border-radius:8px;padding:9px 11px;margin-bottom:8px;font-size:12px;color:var(--ink2);line-height:1.5;}
+.pp-insight-loading{text-align:center;color:var(--ink3);font-size:12px;padding:6px;font-style:italic;}
+.pp-cta{display:block;width:100%;padding:9px;text-align:center;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;text-decoration:none;}
+.pp-cta:hover{background:#1558DD;}
+
+/* MODAL AJOUT */
+.modal-overlay{position:fixed;inset:0;z-index:2000;background:rgba(10,23,64,.4);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;}
+.modal{background:var(--white);border-radius:16px;padding:24px;width:400px;max-width:95vw;box-shadow:0 16px 48px rgba(10,23,64,.2);}
+.modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;margin-bottom:6px;}
+.modal-sub{font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.5;}
+.modal-field{margin-bottom:12px;}
+.modal-label{font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:5px;display:block;}
+.modal-inp{width:100%;padding:10px 12px;background:var(--s1);border:1px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;}
+.modal-inp:focus{border-color:var(--blue);background:var(--white);}
+.modal-btns{display:flex;gap:8px;margin-top:16px;}
+.modal-cancel{flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:none;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink3);cursor:pointer;}
+.modal-save{flex:1;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;}
+
+/* LEAFLET */
+.leaflet-popup-content-wrapper{border-radius:14px !important;box-shadow:0 8px 32px rgba(10,23,64,.12) !important;border:1px solid var(--border) !important;}
+.leaflet-popup-content{margin:14px !important;}
+
+/* LÉGENDE */
+.legend{position:absolute;bottom:16px;left:16px;z-index:500;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:12px;padding:11px 13px;box-shadow:0 2px 10px rgba(10,23,64,.07);}
+.legend-t{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:7px;}
+.lr{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2);margin-bottom:3px;}
+.lr:last-child{margin-bottom:0;}
+.ldot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+.map-total{position:absolute;top:12px;right:12px;z-index:500;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:12px;padding:11px 15px;text-align:center;box-shadow:0 2px 10px rgba(10,23,64,.07);}
+.mt-n{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;letter-spacing:-1px;color:var(--blue);}
+.mt-l{font-size:10px;color:var(--ink3);margin-top:1px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Ambass<em>ia</em></div>
+  <div class="h-mid">
+    <div class="h-title">Carte des campus</div>
+    <div class="h-badge" id="hbadge">Chargement...</div>
+    <div class="h-badge-green" id="hbadge-ambas" style="display:none">0 ambassadeur</div>
+  </div>
+  <a class="h-cta" href="https://calendly.com/james-porato-ambassia/30min" target="_blank">Lancer une campagne →</a>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-top">
+      <div class="search-wrap">
+        <span class="si">🔍</span>
+        <input class="search-inp" id="search" type="text" placeholder="Campus, ville...">
+      </div>
+      <div class="filters" id="filters">
+        <button class="fb on" data-t="all">Tous</button>
+        <button class="fb" data-t="universite">🎓 Université</button>
+        <button class="fb" data-t="ecole_commerce">💼 Commerce</button>
+        <button class="fb" data-t="ecole_ingenieur">⚙️ Ingé</button>
+        <button class="fb" data-t="iep">🏛️ IEP</button>
+        <button class="fb" data-t="ambassia">🟢 Nos campus</button>
+      </div>
+      <div class="stats">
+        <div class="st"><div class="stn" id="sn1" style="color:var(--blue)">—</div><div class="stl">Campus</div></div>
+        <div class="st"><div class="stn" id="sn2" style="color:var(--green)">—</div><div class="stl">Étudiants</div></div>
+        <div class="st"><div class="stn" id="sn3" style="color:var(--purple)">—</div><div class="stl">Avec BDE</div></div>
+      </div>
+
+      <!-- SECTION AMBASSADEURS -->
+      <div class="ambas-section">
+        <div class="ambas-title">
+          🟢 Nos ambassadeurs
+          <span class="ambas-add-btn" onclick="openModal()">+ Ajouter</span>
+        </div>
+        <div class="ambas-list" id="ambas-list">
+          <div class="ambas-empty">Aucun ambassadeur ajouté.<br>Clique sur un campus pour en ajouter.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb-list" id="sb-list">
+      <div class="no-res">Chargement des campus...</div>
+    </div>
+  </aside>
+
+  <div class="map-wrap">
+    <div id="map"></div>
+
+    <!-- LOADER -->
+    <div class="loader" id="loader">
+      <div class="loader-dots">
+        <div class="ld-dot"></div><div class="ld-dot"></div><div class="ld-dot"></div>
+      </div>
+      <div class="loader-title">Chargement des campus</div>
+      <div class="loader-sub">Claude répertorie tous les établissements d'enseignement supérieur français...</div>
+      <div class="loader-progress" id="loader-progress">Étape 1/3 — Nord & IDF</div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-t">Type d'établissement</div>
+      <div class="lr"><div class="ldot" style="background:#1A6BFF"></div>Université</div>
+      <div class="lr"><div class="ldot" style="background:#7B4FE0"></div>École de commerce</div>
+      <div class="lr"><div class="ldot" style="background:#0A9E6A"></div>École d'ingénieurs</div>
+      <div class="lr"><div class="ldot" style="background:#E85C1A"></div>IEP / Sciences Po</div>
+      <div class="lr"><div class="ldot" style="background:#C47B00"></div>Autre</div>
+      <div class="lr"><div class="ldot" style="background:#0A9E6A;border:2px solid white;box-shadow:0 0 0 2px #0A9E6A"></div>Campus Ambassia</div>
+    </div>
+
+    <div class="map-total">
+      <div class="mt-n" id="mt-n">—</div>
+      <div class="mt-l">campus affichés</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AJOUT AMBASSADEUR -->
+<div class="modal-overlay" id="modal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">Ajouter des ambassadeurs</div>
+    <div class="modal-sub">Sélectionne un campus et indique le nombre d'ambassadeurs Ambassia présents.</div>
+    <div class="modal-field">
+      <label class="modal-label">Campus</label>
+      <input class="modal-inp" id="modal-campus" type="text" placeholder="Rechercher un campus...">
+      <div id="modal-suggestions" style="background:var(--white);border:1px solid var(--border);border-radius:8px;margin-top:4px;display:none;max-height:160px;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Nombre d'ambassadeurs</label>
+      <input class="modal-inp" id="modal-count" type="number" min="1" max="50" placeholder="ex: 3">
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Annuler</button>
+      <button class="modal-save" onclick="saveAmbas()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var COLORS = {universite:'#1A6BFF',ecole_commerce:'#7B4FE0',ecole_ingenieur:'#0A9E6A',iep:'#E85C1A',autre:'#C47B00'};
+var LABELS = {universite:'Université',ecole_commerce:'École de commerce',ecole_ingenieur:"École d'ingénieurs",iep:'IEP / Sciences Po',autre:'Autre'};
+
+var DATA = [];
+var AMBAS = {}; // {campusId: count}
+var filter = 'all', search = '', mapObj, mks = [], insightCache = {};
+var modalSelectedId = null;
+
+function fmtN(n){ return n >= 1000 ? (n/1000).toFixed(0)+'k' : String(n); }
+
+// ── CHARGEMENT CAMPUS VIA CLAUDE ──
+function loadCampus() {
+  var batches = [
+    {
+      label: 'Étape 1/3 — Paris & Nord',
+      prompt: 'Liste exhaustive de tous les etablissements denseignement superieur en France dans ces regions : Ile-de-France (Paris, Versailles, Cergy, Marne-la-Vallee, Evry, Creteil, Nanterre), Hauts-de-France (Lille, Valenciennes, Amiens, Arras, Dunkerque, Roubaix, Lens, Bethune), Grand Est (Strasbourg, Reims, Nancy, Metz, Mulhouse, Troyes, Belfort), Normandie (Rouen, Caen, Le Havre, Cherbourg). Inclus universites, grandes ecoles, ecoles de commerce, ecoles dingenieur, IEP, ENSC, IAE, IUT independants connus. Retourne UNIQUEMENT un tableau JSON valide. Chaque objet : {"nom":"...","ville":"...","lat":0.0,"lng":0.0,"type":"universite|ecole_commerce|ecole_ingenieur|iep|autre","etu":0,"bde":true}. Minimum 80 etablissements. Pas de texte, pas de backticks, juste le JSON.'
+    },
+    {
+      label: 'Étape 2/3 — Sud & Est',
+      prompt: 'Liste exhaustive de tous les etablissements denseignement superieur en France dans ces regions : Auvergne-Rhone-Alpes (Lyon, Grenoble, Saint-Etienne, Clermont-Ferrand, Chambery, Annecy, Valence), PACA (Marseille, Aix-en-Provence, Nice, Toulon, Avignon, Cannes), Occitanie (Toulouse, Montpellier, Nimes, Perpignan, Montauban, Albi), Bourgogne-Franche-Comte (Dijon, Besancon, Belfort, Chalon), Corse (Corte, Ajaccio). Inclus universites, grandes ecoles, ecoles de commerce, ecoles dingenieur, IEP, ENSC, IAE. Retourne UNIQUEMENT un tableau JSON valide. Chaque objet : {"nom":"...","ville":"...","lat":0.0,"lng":0.0,"type":"universite|ecole_commerce|ecole_ingenieur|iep|autre","etu":0,"bde":true}. Minimum 80 etablissements. Pas de texte, pas de backticks, juste le JSON.'
+    },
+    {
+      label: 'Étape 3/3 — Ouest & DOM-TOM',
+      prompt: 'Liste exhaustive de tous les etablissements denseignement superieur en France dans ces regions : Bretagne (Rennes, Brest, Lorient, Quimper, Vannes, Saint-Brieuc), Pays de la Loire (Nantes, Angers, Le Mans, Saint-Nazaire, La Roche-sur-Yon), Nouvelle-Aquitaine (Bordeaux, Pau, Bayonne, Limoges, Poitiers, La Rochelle, Perigueux, Angouleme), Centre-Val de Loire (Tours, Orleans, Bourges, Chartres, Blois), DOM-TOM (La Reunion, Martinique, Guadeloupe, Guyane). Inclus universites, grandes ecoles, ecoles de commerce, ecoles dingenieur, IEP. Retourne UNIQUEMENT un tableau JSON valide. Chaque objet : {"nom":"...","ville":"...","lat":0.0,"lng":0.0,"type":"universite|ecole_commerce|ecole_ingenieur|iep|autre","etu":0,"bde":true}. Minimum 60 etablissements. Pas de texte, pas de backticks, juste le JSON.'
+    }
+  ];
+
+  var results = [];
+  var idx = 0;
+
+  function next() {
+    if (idx >= batches.length) {
+      finalize(results);
+      return;
+    }
+    var batch = batches[idx];
+    document.getElementById('loader-progress').textContent = batch.label;
+
+    fetch('/.netlify/functions/claude', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: body.model || 'claude-sonnet-4-20250514',
-        max_tokens: body.max_tokens || 1000,
-        system: body.system || '',
-        messages: body.messages || []
-      })
-    });
-
-    const data = await response.json();
-
-    return {
-      statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    };
-
-  } catch (err) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: { message: err.message } })
-    };
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: batch.prompt }]
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.content && d.content[0]) {
+        var text = d.content[0].text.trim()
+          .replace(/^\x60\x60\x60json\s*/i, '')
+          .replace(/^\x60\x60\x60\s*/i, '')
+          .replace(/\s*\x60\x60\x60\s*$/i, '');
+        try {
+          var arr = JSON.parse(text);
+          if (Array.isArray(arr)) results = results.concat(arr);
+        } catch(e) {
+          var m = text.match(/\[[\s\S]+\]/);
+          if (m) { try { var arr2 = JSON.parse(m[0]); if (Array.isArray(arr2)) results = results.concat(arr2); } catch(e2) {} }
+        }
+      }
+      idx++;
+      next();
+    })
+    .catch(function() { idx++; next(); });
   }
-};
+
+  next();
+}
+
+function finalize(raw) {
+  // Dédoublonner par nom
+  var seen = {};
+  DATA = raw.filter(function(c) {
+    var key = c.nom.toLowerCase().trim();
+    if (seen[key]) return false;
+    seen[key] = true;
+    // Valider les coordonnées (France métropolitaine + DOM)
+    if (!c.lat || !c.lng) return false;
+    return true;
+  }).map(function(c, i) {
+    return {
+      id: i + 1,
+      nom: c.nom || '',
+      ville: c.ville || '',
+      lat: parseFloat(c.lat),
+      lng: parseFloat(c.lng),
+      type: c.type || 'universite',
+      etu: parseInt(c.etu) || 0,
+      bde: c.bde === true || c.bde === 'true'
+    };
+  });
+
+  document.getElementById('loader').style.display = 'none';
+  initMap();
+}
+
+// ── MAP ──
+function initMap() {
+  mapObj = L.map('map', { center: [46.5, 2.5], zoom: 6, zoomControl: false });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 18
+  }).addTo(mapObj);
+  L.control.zoom({ position: 'bottomright' }).addTo(mapObj);
+  render();
+}
+
+function getFiltered() {
+  return DATA.filter(function(c) {
+    if (filter === 'ambassia') return !!AMBAS[c.id];
+    var fok = filter === 'all' || c.type === filter;
+    var sok = !search || c.nom.toLowerCase().indexOf(search.toLowerCase()) >= 0 || c.ville.toLowerCase().indexOf(search.toLowerCase()) >= 0;
+    return fok && sok;
+  });
+}
+
+function render() {
+  var list = getFiltered();
+  var totalEtu = list.reduce(function(a, c) { return a + c.etu; }, 0);
+  var totalBde = list.filter(function(c) { return c.bde; }).length;
+  var totalAmbas = Object.values(AMBAS).reduce(function(a, v) { return a + v; }, 0);
+
+  document.getElementById('sn1').textContent = list.length;
+  document.getElementById('sn2').textContent = fmtN(totalEtu);
+  document.getElementById('sn3').textContent = totalBde;
+  document.getElementById('hbadge').textContent = DATA.length + ' campus';
+
+  var badgeAmbas = document.getElementById('hbadge-ambas');
+  if (totalAmbas > 0) {
+    badgeAmbas.style.display = 'inline-block';
+    badgeAmbas.textContent = totalAmbas + ' ambassadeur' + (totalAmbas > 1 ? 's' : '');
+  } else {
+    badgeAmbas.style.display = 'none';
+  }
+
+  document.getElementById('mt-n').textContent = list.length;
+
+  // Markers
+  mks.forEach(function(m) { mapObj.removeLayer(m); });
+  mks = [];
+
+  list.forEach(function(c) {
+    var hasAmbas = !!AMBAS[c.id];
+    var col = COLORS[c.type] || '#C47B00';
+    var size = hasAmbas ? 16 : 10;
+    var html = hasAmbas
+      ? '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:#0A9E6A;border:3px solid white;box-shadow:0 0 10px rgba(10,158,106,.6);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:white;">' + AMBAS[c.id] + '</div>'
+      : '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:'+col+';border:2px solid white;box-shadow:0 0 6px '+col+'99;cursor:pointer;"></div>';
+
+    var icon = L.divIcon({ className: '', html: html, iconSize: [size, size], iconAnchor: [size/2, size/2] });
+    var mk = L.marker([c.lat, c.lng], { icon: icon }).addTo(mapObj);
+    mk.on('click', function() { openPopup(c, mk); });
+    mks.push(mk);
+  });
+
+  // Liste
+  renderList(list);
+  renderAmbasList();
+}
+
+function renderList(list) {
+  var el = document.getElementById('sb-list');
+  if (!list.length) { el.innerHTML = '<div class="no-res">Aucun résultat</div>'; return; }
+  el.innerHTML = list.map(function(c) {
+    var hasAmbas = !!AMBAS[c.id];
+    return '<div class="ci' + (hasAmbas ? ' has-ambas' : '') + '" data-id="' + c.id + '" onclick="clickItem(' + c.id + ')">' +
+      '<div class="ci-top"><div class="ci-nom">' + c.nom + '</div>' +
+      '<span class="ci-badge t-' + c.type + '">' + LABELS[c.type].split(' ')[0] + '</span></div>' +
+      '<div class="ci-meta"><span class="ci-v">📍 ' + c.ville + '</span>' +
+      (c.etu ? '<span class="ci-e">👥 ' + fmtN(c.etu) + '</span>' : '') +
+      (c.bde ? '<span class="ci-bde">BDE</span>' : '') +
+      (hasAmbas ? '<span class="ci-ambas">🟢 ' + AMBAS[c.id] + ' amb.</span>' : '') +
+      '</div></div>';
+  }).join('');
+}
+
+function renderAmbasList() {
+  var el = document.getElementById('ambas-list');
+  var keys = Object.keys(AMBAS);
+  if (!keys.length) {
+    el.innerHTML = '<div class="ambas-empty">Aucun ambassadeur ajouté.<br>Clique sur un campus pour en ajouter.</div>';
+    return;
+  }
+  el.innerHTML = keys.map(function(id) {
+    var c = DATA.find(function(x) { return x.id == id; });
+    if (!c) return '';
+    return '<div class="ambas-item">' +
+      '<div class="ambas-item-info">' +
+        '<div class="ambas-item-name">' + c.nom + '</div>' +
+        '<div class="ambas-item-meta">📍 ' + c.ville + '</div>' +
+      '</div>' +
+      '<div class="ambas-item-count">' + AMBAS[id] + '</div>' +
+      '<div class="ambas-item-edit" onclick="editAmbas(' + id + ')">✏️</div>' +
+    '</div>';
+  }).join('');
+}
+
+function clickItem(id) {
+  document.querySelectorAll('.ci').forEach(function(el) { el.classList.remove('on'); });
+  var el = document.querySelector('[data-id="' + id + '"]');
+  if (el) { el.classList.add('on'); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  var c = DATA.find(function(x) { return x.id === id; });
+  if (!c) return;
+  var list = getFiltered();
+  var idx = list.findIndex(function(x) { return x.id === id; });
+  mapObj.flyTo([c.lat, c.lng], 13, { duration: 1 });
+  if (idx >= 0 && mks[idx]) openPopup(c, mks[idx]);
+}
+
+function openPopup(c, mk) {
+  var col = COLORS[c.type] || '#C47B00';
+  var count = AMBAS[c.id] || 0;
+
+  var ambasBlock = '<div class="pp-ambas-block">' +
+    '<div class="pp-ambas-title">🟢 Ambassadeurs Ambassia</div>' +
+    (count > 0
+      ? '<div class="pp-ambas-count">' + count + '</div><div class="pp-ambas-label">ambassadeur' + (count > 1 ? 's' : '') + ' sur ce campus</div>'
+      : '<div style="font-size:12px;color:var(--ink3);margin-bottom:6px;">Aucun ambassadeur sur ce campus</div>'
+    ) +
+    '<div class="pp-ambas-form">' +
+      '<input class="pp-ambas-inp" id="ambas-inp-' + c.id + '" type="number" min="0" max="50" placeholder="Nb ambassadeurs" value="' + (count || '') + '">' +
+      '<button class="pp-ambas-save" onclick="saveAmbasFromPopup(' + c.id + ')">Enregistrer</button>' +
+    '</div>' +
+  '</div>';
+
+  var insightHtml = insightCache[c.id]
+    ? '<div class="pp-insight">' + insightCache[c.id] + '</div>'
+    : '<div class="pp-insight-loading" id="pi-' + c.id + '">💡 Analyse IA en cours...</div>';
+
+  L.popup({ maxWidth: 280 })
+    .setLatLng([c.lat, c.lng])
+    .setContent(
+      '<div class="pp">' +
+      '<div class="pp-name">' + c.nom + '</div>' +
+      '<div class="pp-ville">📍 ' + c.ville + '</div>' +
+      '<div class="pp-chips">' +
+        '<span class="pp-chip t-' + c.type + '" style="background:' + col + '15;color:' + col + '">' + LABELS[c.type] + '</span>' +
+        (c.bde ? '<span class="pp-chip" style="background:#E6F7F1;color:#0A9E6A">✓ BDE</span>' : '') +
+      '</div>' +
+      '<div class="pp-grid">' +
+        '<div class="pp-stat"><div class="pp-sn" style="color:' + col + '">' + fmtN(c.etu) + '</div><div class="pp-sl">Étudiants</div></div>' +
+        '<div class="pp-stat"><div class="pp-sn" style="color:' + col + '">' + LABELS[c.type].split(' ')[0] + '</div><div class="pp-sl">Type</div></div>' +
+      '</div>' +
+      ambasBlock +
+      insightHtml +
+      '<a class="pp-cta" href="https://calendly.com/james-porato-ambassia/30min" target="_blank">Lancer une campagne →</a>' +
+      '</div>'
+    ).openOn(mapObj);
+
+  if (!insightCache[c.id]) fetchInsight(c);
+}
+
+function saveAmbasFromPopup(campusId) {
+  var inp = document.getElementById('ambas-inp-' + campusId);
+  if (!inp) return;
+  var val = parseInt(inp.value);
+  if (val > 0) {
+    AMBAS[campusId] = val;
+  } else {
+    delete AMBAS[campusId];
+  }
+  mapObj.closePopup();
+  render();
+}
+
+function editAmbas(campusId) {
+  var c = DATA.find(function(x) { return x.id == campusId; });
+  if (!c) return;
+  clickItem(campusId);
+}
+
+// ── MODAL ──
+function openModal() {
+  document.getElementById('modal').style.display = 'flex';
+  document.getElementById('modal-campus').value = '';
+  document.getElementById('modal-count').value = '';
+  document.getElementById('modal-suggestions').style.display = 'none';
+  modalSelectedId = null;
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('modal-campus').addEventListener('input', function() {
+    var q = this.value.toLowerCase();
+    var sugg = document.getElementById('modal-suggestions');
+    if (!q || q.length < 2) { sugg.style.display = 'none'; return; }
+    var matches = DATA.filter(function(c) {
+      return c.nom.toLowerCase().indexOf(q) >= 0 || c.ville.toLowerCase().indexOf(q) >= 0;
+    }).slice(0, 6);
+    if (!matches.length) { sugg.style.display = 'none'; return; }
+    sugg.style.display = 'block';
+    sugg.innerHTML = matches.map(function(c) {
+      return '<div style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onclick="selectModalCampus(' + c.id + ',\'' + c.nom.replace(/'/g, '') + '\')">' +
+        c.nom + '<span style="color:var(--ink3);font-size:11px;margin-left:6px;">📍 ' + c.ville + '</span></div>';
+    }).join('');
+  });
+});
+
+function selectModalCampus(id, nom) {
+  modalSelectedId = id;
+  document.getElementById('modal-campus').value = nom;
+  document.getElementById('modal-suggestions').style.display = 'none';
+}
+
+function saveAmbas() {
+  if (!modalSelectedId) { alert('Sélectionne un campus.'); return; }
+  var count = parseInt(document.getElementById('modal-count').value);
+  if (!count || count < 1) { alert('Indique un nombre valide.'); return; }
+  AMBAS[modalSelectedId] = count;
+  closeModal();
+  render();
+}
+
+// ── INSIGHT IA ──
+function fetchInsight(c) {
+  fetch('/.netlify/functions/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 120,
+      messages: [{ role: 'user', content: 'Donne un insight court (2 phrases max) sur comment une marque Gen Z peut activer le campus ' + c.nom + ' a ' + c.ville + ' (' + fmtN(c.etu) + ' etudiants). Sois precis et percutant.' }]
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.content && d.content[0]) {
+      insightCache[c.id] = d.content[0].text;
+      var el = document.getElementById('pi-' + c.id);
+      if (el) el.outerHTML = '<div class="pp-insight">' + insightCache[c.id] + '</div>';
+    }
+  })
+  .catch(function() {
+    var el = document.getElementById('pi-' + c.id);
+    if (el) el.style.display = 'none';
+  });
+}
+
+// ── EVENTS ──
+document.getElementById('search').addEventListener('input', function(e) { search = e.target.value; render(); });
+document.getElementById('filters').addEventListener('click', function(e) {
+  var b = e.target.closest('.fb');
+  if (!b) return;
+  document.querySelectorAll('.fb').forEach(function(x) { x.classList.remove('on'); });
+  b.classList.add('on');
+  filter = b.dataset.t;
+  render();
+});
+
+// ── START ──
+loadCampus();
+</script>
+</body>
+</html>
